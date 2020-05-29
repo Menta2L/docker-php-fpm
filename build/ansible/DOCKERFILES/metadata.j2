@@ -1,0 +1,21 @@
+MAINTAINER {{ docker_maintainer }}
+
+###
+### Labels
+###
+# https://github.com/opencontainers/image-spec/blob/master/annotations.md
+#LABEL "org.opencontainers.image.created"=""
+#LABEL "org.opencontainers.image.version"=""
+#LABEL "org.opencontainers.image.revision"=""
+LABEL "maintainer"="{{ docker_maintainer }}"
+LABEL "org.opencontainers.image.authors"="{{ docker_maintainer }}"
+LABEL "org.opencontainers.image.url"="{{ src_repository }}"
+LABEL "org.opencontainers.image.documentation"="{{ src_repository }}"
+LABEL "org.opencontainers.image.source"="{{ src_repository }}"
+LABEL "org.opencontainers.image.vendor"="{{ docker_vendor }}"
+LABEL "org.opencontainers.image.licenses"="MIT"
+LABEL "org.opencontainers.image.ref.name"="{{ php_version }}-{{ item.key }}"
+LABEL "org.opencontainers.image.title"="PHP-FPM {{ php_version }}-{{ item.key }}"
+LABEL "org.opencontainers.image.description"="PHP-FPM {{ php_version }}-{{ item.key }}"
+
+

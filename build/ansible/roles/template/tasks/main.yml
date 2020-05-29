@@ -1,0 +1,30 @@
+---
+
+- name: generate Dockerfiles
+  template:
+    src:  "{{ item.src }}"
+    dest: "{{ item.dst }}"
+    force: True
+    mode:  0644
+  with_items:
+    - "{{ template_dockerfiles }}"
+
+- name: generate php configuration files
+  template:
+    src:  "{{ item.src }}"
+    dest: "{{ item.dst }}"
+    force: True
+    mode:  0644
+  with_items:
+    - "{{ template_configurations }}"
+  when: inventory_hostname in groups['php']
+
+- name: generate vendor Dockerfile
+  template:
+    src:  "{{ item.src }}"
+    dest: "{{ item.dst }}"
+    force: True
+    mode:  0644
+  with_items:
+    - "{{ template_dockerfiles_vendor }}"
+  when: inventory_hostname in groups['vendor']

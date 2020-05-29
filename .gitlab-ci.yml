@@ -1,0 +1,145 @@
+image: docker:stable
+
+stages:
+  - prebuild
+  - build-vendor
+  - build-base
+  - build-mods
+  - build-prod
+  - build-work
+.docker_login: &docker_login |
+  cp $DOCKER_AUTH /kaniko/.docker/config.json
+.k8s_template: &k8s_definition  # Hidden key that defines an anchor named 'npm_definition'
+  stage: prebuild
+  image:
+    name: docker.io/veraxnet/cloud-sdk
+    entrypoint: [""]
+  script:
+    - echo "Get k8 credentials here"
+  artifacts:
+    expire_in: 1 month
+    paths:
+    - gitrun-env.sh
+    - gcr-credentials.json
+    - config.json
+
+k8s:
+  <<: *k8s_definition
+  tags:
+    - CARS-BG-DEV
+generate:
+  stage: prebuild
+  image:
+    name: mullnerz/ansible-playbook
+    entrypoint: [""]
+  script:
+    - cd $CI_PROJECT_DIR/build/ansible
+    - chmod 755 -R $CI_PROJECT_DIR/build/ansible
+    - ansible-playbook generate.yml
+  tags:
+    - CARS-BG-DEV
+  artifacts:
+    expire_in: 1 month
+    paths:
+    - Dockerfiles/
+build:php-8.0-vendor:
+  stage: build-vendor
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - *docker_login
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfiles/vendor/Dockerfile  --destination docker.jobs.bg/veraxnet/php:8.0-vendor
+  tags:
+    - CARS-BG-DEV
+  needs: ["generate"]
+build:php-7.4-base:
+  stage: build-base
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - *docker_login
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR/Dockerfiles/base --dockerfile $CI_PROJECT_DIR/Dockerfiles/base/Dockerfile-7.4 --destination docker.jobs.bg/veraxnet/php:7.4-base
+  tags:
+    - CARS-BG-DEV
+build:php-8.0-base:
+  stage: build-base
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - *docker_login
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR/Dockerfiles/base --dockerfile $CI_PROJECT_DIR/Dockerfiles/base/Dockerfile-8.0 --destination docker.jobs.bg/veraxnet/php:8.0-base
+  tags:
+    - CARS-BG-DEV
+build:php-7.4-mods:
+  stage: build-mods
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - *docker_login
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR/Dockerfiles/mods --dockerfile $CI_PROJECT_DIR/Dockerfiles/mods/Dockerfile-7.4 --destination docker.jobs.bg/veraxnet/php:7.4-mods --verbosity=debug
+  tags:
+    - CARS-BG-DEV
+build:php-8.0-mods:
+  stage: build-mods
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - *docker_login
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR/Dockerfiles/mods --dockerfile $CI_PROJECT_DIR/Dockerfiles/mods/Dockerfile-8.0 --destination docker.jobs.bg/veraxnet/php:8.0-mods --verbosity=debug
+  tags:
+    - CARS-BG-DEV
+build:php-7.4-prod:
+  stage: build-prod
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - *docker_login
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR/Dockerfiles/prod --dockerfile $CI_PROJECT_DIR/Dockerfiles/prod/Dockerfile-7.4 --destination docker.jobs.bg/veraxnet/php:7.4-prod
+  tags:
+    - CARS-BG-DEV
+build:php-8.0-prod:
+  stage: build-prod
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - *docker_login
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR/Dockerfiles/prod --dockerfile $CI_PROJECT_DIR/Dockerfiles/prod/Dockerfile-8.0 --destination docker.jobs.bg/veraxnet/php:8.0-prod
+  tags:
+    - CARS-BG-DEV
+
+build:php-7.4-work:
+  stage: build-work
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - *docker_login
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR/Dockerfiles/work --dockerfile $CI_PROJECT_DIR/Dockerfiles/work/Dockerfile-7.4 --destination docker.jobs.bg/veraxnet/php:7.4-work
+  tags:
+    - CARS-BG-DEV
+build:php-8.0-work:
+  stage: build-work
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  before_script:
+    - *docker_login
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR/Dockerfiles/work --dockerfile $CI_PROJECT_DIR/Dockerfiles/work/Dockerfile-8.0 --destination docker.jobs.bg/veraxnet/php:8.0-work
+  tags:
+    - CARS-BG-DEV

@@ -1,0 +1,10 @@
+php_user: sandbox
+php_group: sandbox
+php_uid: 1000
+php_gid: 1000
+docker_maintainer: vesco <vesco@jobs.bg>
+docker_vendor: veraxnet
+docker_workdir: /srv/project
+docker_repo: docker.jobs.bg/veraxnet
+src_repository : https://git.infra.verax.net/veraxnet/docker-php-fpm
+

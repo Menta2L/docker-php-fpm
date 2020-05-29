@@ -1,0 +1,692 @@
+---
+###################################################################################################
+# Docker: mods
+###################################################################################################
+
+#
+# This file holds definition for all devibox/php-fpm:x.y-mods images
+#
+
+
+# -------------------------------------------------------------------------------------------------
+# Extensions to enable (in defined order)
+# -------------------------------------------------------------------------------------------------
+extensions_enabled:
+  #  # ioncube must be loaded first
+#  - ioncube
+#  - amqp
+  - apcu
+  - bcmath
+ # - blackfire
+  - bz2
+  - calendar
+  - ctype
+  - curl
+  - dba
+  - dom
+#  - enchant
+  - exif
+#  - ffi
+  - fileinfo
+  - filter
+  - ftp
+  - gd
+  - gettext
+  - gmp
+  - hash
+  - iconv
+#  - igbinary
+#  - imagick
+#  - imap
+#  - interbase
+  - intl
+  - json
+#  - ldap
+  - libxml
+  - mbstring
+  - mcrypt
+#  - msgpack
+  - memcache
+  # requires igbinary and msgpack to be installed
+  - memcached
+  - mongo
+  - mongodb
+  - mysql
+  - mysqli
+  - mysqlnd
+#  - oauth
+#  - oci8
+#  - odbc
+  - opcache
+  - openssl
+  - pcntl
+  - pcre
+  - pdo
+  - pdo_dblib
+#  - pdo_firebird
+  - pdo_mysql
+#  - pdo_oci
+#  - pdo_odbc
+#  - pdo_pgsql
+#  - pdo_sqlite
+#  - pdo_sqlsrv
+#  - pgsql
+  - psr
+  # requires psr to be installed
+#  - phalcon
+  - phar
+  - posix
+  - pspell
+  - readline
+  - recode
+  - redis
+  - reflection
+#  - rdkafka
+  - session
+  - shmop
+  - simplexml
+#  - snmp
+  - soap
+  - sockets
+  - sodium
+#  - solr
+  - spl
+#  - sqlsrv
+#  - ssh2
+  # requires sockets to be installed
+#  - swoole
+  - sysvmsg
+  - sysvsem
+  - sysvshm
+  - tidy
+  - tokenizer
+  - uploadprogress
+  - wddx
+  - xdebug
+  - xml
+  - xmlreader
+  - xmlrpc
+  - xmlwriter
+  - xsl
+  - yaml
+  - zip
+
+
+# -------------------------------------------------------------------------------------------------
+# Extension definition
+# -------------------------------------------------------------------------------------------------
+
+# all: is generic version of defines
+# 7.2: is specific version of defines
+# disabled:      [optional] Array of PHP versions for which to disable this module
+# already_avail: [optional] Array of PHP versions for which we don't install the module, but
+#                the dependencies, as it is already loaded by core
+#
+# all, 7.2:
+#   pre:         [optional] Run command before anything else
+#   post:        [optional] Run command after anything else (builder and final image)
+#   build_dep:   [optional] Array of build dependencies
+#   run_dep:     [optional] Array of run-time dependencies
+#   type:        [required] One of 'builtin', 'pecl' or 'git'
+#
+# type: builtin
+#   configure:   [optional] Add './configure' arguments
+# type: pecl
+#   version:     [optional] Pecl packet version
+#   command:     [optional] Overwrite pecl command (pecl install ext)
+# type: git
+#   git_url:     [required] Git repository URL
+#   git_ref:     [optional] Tag, branch, commit to checkout
+#   configure:   [optional] Add './configure' arguments
+#   command:     [optional] Overwrite default command (phpize && ./configure && make && make install)
+# type: custom
+#   command:     [required] Custom command to install and enable a module
+extensions_available:
+  amqp:
+    disabled: [8.0]
+    all:
+      type: pecl
+      command: echo "/usr" | pecl install amqp
+      build_dep: [librabbitmq-dev]
+      run_dep: [librabbitmq4]
+  apcu:
+    disabled: [8.0]
+    all:
+      type: pecl
+  bcmath:
+    all:
+      type: builtin
+  blackfire:
+    disabled: [8.0]
+    all:
+      type: custom
+      command: |
+        version=$(php -r "echo PHP_MAJOR_VERSION.PHP_MINOR_VERSION;") \
+        && curl -A "Docker" -o /tmp/blackfire-probe.tar.gz -D - -L -s https://blackfire.io/api/v1/releases/probe/php/linux/amd64/$version \
+        && mkdir -p /tmp/blackfire \
+        && tar zxpf /tmp/blackfire-probe.tar.gz -C /tmp/blackfire \
+        && mv /tmp/blackfire/blackfire-*.so $(php -r "echo ini_get('extension_dir');")/blackfire.so \
+        && rm -rf /tmp/blackfire /tmp/blackfire-probe.tar.gz \
+  bz2:
+    all:
+      type: builtin
+      build_dep: [libbz2-dev]
+  calendar:
+    all:
+      type: builtin
+  ctype:
+    already_avail: "{{ php_all_versions }}"
+  curl:
+    already_avail: "{{ php_all_versions }}"
+  dba:
+    all:
+      type: builtin
+  dom:
+    already_avail: "{{ php_all_versions }}"
+  enchant:
+    all:
+      type: builtin
+      build_dep: [libenchant-dev]
+      run_dep: [libenchant1c2a]
+  exif:
+    all:
+      type: builtin
+  ffi:
+    already_avail: [8.0]
+    disabled: [7.2, 7.3]
+    all:
+      type: git
+      git_url: https://github.com/dstogov/php-ffi
+      command: |
+        phpize \
+        && ./configure --with-ffi \
+        && make -j$(getconf _NPROCESSORS_ONLN) \
+        && make install \
+      build_dep: [libffi-dev]
+      run_dep: [libffi6]
+  fileinfo:
+    already_avail: [7.2, 7.3, 7.4, 8.0]
+    all:
+      type: builtin
+  filter:
+    already_avail: "{{ php_all_versions }}" # Available by default
+  ftp:
+    already_avail: [7.2, 7.3, 7.4, 8.0]
+    all:
+      type: builtin
+      configure: --with-openssl-dir
+      build_dep: [libssl-dev]
+  gd:
+    7.2:
+      type: builtin
+      configure: --with-gd --with-webp-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr --with-zlib-dir=/usr --with-xpm-dir=/usr --with-freetype-dir=/usr --enable-gd-jis-conv
+    7.3:
+      type: builtin
+      configure: --with-gd --with-webp-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr --with-zlib-dir=/usr --with-xpm-dir=/usr --with-freetype-dir=/usr --enable-gd-jis-conv
+    7.4:
+      type: builtin
+      configure: --enable-gd --with-webp --with-jpeg --with-xpm --with-freetype --enable-gd-jis-conv
+    8.0:
+      type: builtin
+      configure: --enable-gd --with-webp --with-jpeg --with-xpm --with-freetype --enable-gd-jis-conv
+    all:
+      type: builtin
+      pre: ln -s /usr/lib/x86_64-linux-gnu/libXpm.* /usr/lib/
+      configure: --with-gd --with-vpx-dir=/usr --with-jpeg-dir=/usr --with-png-dir=/usr --with-zlib-dir=/usr --with-xpm-dir=/usr --with-freetype-dir=/usr --enable-gd-jis-conv --enable-gd-native-ttf
+      build_dep: [libpng-dev, libjpeg-dev, libxpm-dev, libvpx-dev, zlib1g-dev, libfreetype6-dev, libwebp-dev]
+      run_dep: [libpng16-16, libjpeg62-turbo, libxpm4, libvpx5, libfreetype6, libwebp6]
+  gettext:
+    all:
+      type: builtin
+  gmp:
+    all:
+      type: builtin
+      pre: ln /usr/include/x86_64-linux-gnu/gmp.h /usr/include/
+      build_dep: [libgmp-dev]
+  hash:
+    already_avail: "{{ php_all_versions }}"
+  iconv:
+    already_avail: "{{ php_all_versions }}"
+  igbinary:
+    disabled: [8.0]
+    all:
+      type: pecl
+  imagick:
+    disabled: [8.0] 
+    all:
+      type: pecl
+      build_dep: [libmagickwand-dev, libwebp6]
+      run_dep: [libmagickwand-6.q16-6, libwebp-dev]
+  imap:
+    disabled: [7.4, 8.0]   # TODO: re-enable. currently fails with: configure: error: OpenSSL libraries not found.
+    all:
+      type: builtin
+      pre: ln -s /usr/lib/x86_64-linux-gnu/libkrb5* /usr/lib/
+      configure: --with-kerberos --with-imap-ssl --with-imap
+      build_dep: [libc-client-dev, libkrb5-dev, libcurl4-openssl-dev]
+      run_dep: [libc-client2007e]
+  interbase:
+    disabled: [7.4, 8.0]
+    all:
+      type: builtin
+      build_dep: [libfbclient2, libib-util, firebird-dev]
+      run_dep: [libfbclient2]
+  intl:
+    all:
+      type: builtin
+      build_dep: [libicu-dev]
+      run_dep: [libicu63]
+  ioncube:
+    disabled: [7.4, 8.0]
+    all:
+      type: custom
+      command: |
+        EXTENSION_DIR="$( php -i | grep ^extension_dir | awk -F '=>' '{print $2}' | xargs )" \
+        && if [ ! -d "${EXTENSION_DIR}" ]; then mkdir -p "${EXTENSION_DIR}"; fi \
+        && curl https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz -L -o ioncube.tar.gz \
+        && tar xvfz ioncube.tar.gz \
+        && cd ioncube \
+        && cp "ioncube_loader_lin_{{ php_version }}.so" "${EXTENSION_DIR}/ioncube.so" \
+        && cd ../ \
+        && rm -rf ioncube \
+        && rm -rf ioncube.tar.gz \
+  json:
+    already_avail: "{{ php_all_versions }}"
+  ldap:
+    all:
+      type: builtin
+      pre: ln -s /usr/lib/x86_64-linux-gnu/libldap* /usr/lib/
+      configure: --with-ldap --with-ldap-sasl
+      build_dep: [libldap2-dev, libsasl2-dev]
+  libxml:
+    already_avail: "{{ php_all_versions }}" # Available by default
+  mbstring:
+    already_avail: [7.2, 7.3, 7.4, 8.0]
+    all:
+      type: builtin
+  mcrypt:
+    disabled: [8.0]
+    7.2:
+      type: pecl
+      version: 1.0.1
+    7.3:
+      type: pecl
+      version: 1.0.2
+    7.4:
+      type: pecl
+    all:
+      type: builtin
+      run_dep: [libmcrypt4]
+      build_dep: [libmcrypt-dev]
+  memcache:
+    disabled: [8.0]
+    all:
+      type: pecl
+      build_dep: [zlib1g-dev]
+  memcached:
+    7.4:
+      type: git
+      git_url: https://github.com/php-memcached-dev/php-memcached
+      git_ref: master
+      command: phpize && ./configure --enable-memcached && make -j$(getconf _NPROCESSORS_ONLN) && make install
+    8.0:
+      type: git
+      git_url: https://github.com/php-memcached-dev/php-memcached
+      git_ref: master
+      command: |
+        true \
+        # FIXME: This is a work-around to mitigate compile error with PHP 8.0
+        && sed -i'' 's/\sTSRMLS_CC//g' php_memcached_session.c \
+        && phpize \
+        && ./configure --enable-memcached \
+        && make -j$(getconf _NPROCESSORS_ONLN) \
+        && make install \
+    all:
+      type: pecl
+      build_dep: [zlib1g-dev, libmemcached-dev, libevent-dev]
+      run_dep: [libmemcachedutil2]
+  mongo:
+    disabled: [ 7.2, 7.3, 7.4, 8.0] # Deprecated
+    all:
+      type: pecl
+      command: yes yes | pecl install mongo
+      build_dep: [libssl-dev, libsasl2-dev]
+  mongodb:
+    8.0:
+      type: git
+      git_url: https://github.com/mongodb/mongo-php-driver
+      command: |
+        git checkout v1.6 \
+        && git submodule update --init \
+        # FIXME: This is a work-around to mitigate compile error with PHP 8.0
+        && rgrep -I 'TSRMLS_C' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_C)/)/g' \
+        && rgrep -I 'TSRMLS_C' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_C,/,/g' \
+        && rgrep -I 'TSRMLS_CC' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_CC)/)/g' \
+        && rgrep -I 'TSRMLS_CC' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_CC,/,/g' \
+        && rgrep -I 'TSRMLS_DC' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_DC)/)/g' \
+        && rgrep -I 'TSRMLS_DC' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_DC,/,/g' \
+        && sed -i'' 's/TSRMLS_SET_CTX(ctx);/\/\/TSRMLS_SET_CTX(ctx);/g' php_phongo.c \
+        && sed -i'' 's/TSRMLS_FETCH();/\/\/TSRMLS_FETCH();/g' php_phongo.c \
+        && sed -i'' 's/TSRMLS_FETCH();/\/\/TSRMLS_FETCH();/g' phongo_compat.h \
+        && sed -i'' 's/TSRMLS_FETCH();/\/\/TSRMLS_FETCH();/g' src/bson.c \
+        \
+        && sed -i'' 's/php_phongo_handler_binary.compare_objects.*//g' src/BSON/Binary.c \
+        && sed -i'' 's/php_phongo_handler_dbpointer.compare_objects.*//g' src/BSON/DBPointer.c \
+        && sed -i'' 's/php_phongo_handler_int64.compare_objects.*//g' src/BSON/Int64.c \
+        && sed -i'' 's/php_phongo_handler_javascript.compare_objects.*//g' src/BSON/Javascript.c \
+        && sed -i'' 's/php_phongo_handler_objectid.compare_objects.*//g' src/BSON/ObjectId.c \
+        && sed -i'' 's/php_phongo_handler_symbol.compare_objects.*//g' src/BSON/Symbol.c \
+        && sed -i'' 's/php_phongo_handler_timestamp.compare_objects.*//g' src/BSON/Timestamp.c \
+        && sed -i'' 's/php_phongo_handler_regex.compare_objects.*//g' src/BSON/Regex.c \
+        && sed -i'' 's/php_phongo_handler_server.compare_objects.*//g' src/MongoDB/Server.c \
+        && sed -i'' 's/php_phongo_handler_utcdatetime.compare_objects.*//g' src/BSON/UTCDateTime.c \
+        \
+        && phpize \
+        && ./configure --enable-mongodb \
+        && make all \
+        && make install \
+    all:
+      type: pecl
+      build_dep: [libssl-dev, libsasl2-dev]
+  msgpack:
+    disabled: [8.0]
+    all:
+      type: pecl
+  mysql:
+    disabled: [7.2, 7.3, 7.4, 8.0] # Deprecated in newer versions
+    all:
+      type: builtin
+      run_dep: [libmysqlclient18]
+  mysqli:
+    all:
+      type: builtin
+  mysqlnd:
+    already_avail: [7.2, 7.3, 7.4, 8.0]
+  oauth:
+    disabled: [8.0]
+    all:
+      type: pecl
+      build_dep: [libpcre3-dev]
+  oci8:
+    all:
+      type: builtin
+      configure: --with-oci8=instantclient,/usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/,${ORACLE_VERSION_MAJOR}
+      pre: |
+        ORACLE_HREF="$( curl -sS https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/ | tac | tac | grep -Eo 'href="getPackage/oracle-instantclient.+basiclite.+rpm"' | tail -1 )" \
+        && ORACLE_VERSION_MAJOR="$( echo "${ORACLE_HREF}" | grep -Eo 'instantclient[.0-9]+' | sed 's/instantclient//g' )" \
+        && ORACLE_VERSION_FULL="$( echo "${ORACLE_HREF}" | grep -Eo 'basiclite-[-.0-9]+' | sed -e 's/basiclite-//g' -e 's/\.$//g' )" \
+        \
+        && rpm --import http://yum.oracle.com/RPM-GPG-KEY-oracle-ol7 \
+        && curl -o /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
+          https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/getPackage/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && curl -o /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
+          https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/getPackage/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && alien -i /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && alien -i /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && rm -f /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && rm -f /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
+      build_dep: [alien, libaio-dev]
+      run_dep: [libaio1]
+      post: |
+        ORACLE_HREF="$( curl -sS https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/ | tac | tac | grep -Eo 'href="getPackage/oracle-instantclient.+basiclite.+rpm"' | tail -1 )" \
+        && ORACLE_VERSION_MAJOR="$( echo "${ORACLE_HREF}" | grep -Eo 'instantclient[.0-9]+' | sed 's/instantclient//g' )" \
+        && ORACLE_VERSION_FULL="$( echo "${ORACLE_HREF}" | grep -Eo 'basiclite-[-.0-9]+' | sed -e 's/basiclite-//g' -e 's/\.$//g' )" \
+        && (ln -sf /usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/*.so* /usr/lib/ || true) \
+  odbc:
+    disabled: "{{ php_all_versions }}" # TODO: sqlext.h' not found!
+  opcache:
+    all:
+      type: builtin
+  openssl:
+    already_avail: "{{ php_all_versions }}"
+  pcntl:
+    all:
+      type: builtin
+  pcre:
+    already_avail: "{{ php_all_versions }}"
+  pdo:
+    already_avail: "{{ php_all_versions }}"
+  pdo_dblib:
+    all:
+      type: builtin
+      pre: ln -s /usr/lib/x86_64-linux-gnu/libsybdb.* /usr/lib/
+      build_dep: [freetds-dev]
+      run_dep: [libsybdb5]
+  pdo_firebird:
+    all:
+      type: builtin
+      build_dep: [libfbclient2, libib-util, firebird-dev]
+      run_dep: [libfbclient2]
+  pdo_mysql:
+    all:
+      type: builtin
+      configure: --with-zlib-dir=/usr
+      build_dep: [zlib1g-dev]
+  pdo_oci:
+    7.2:
+      type: builtin
+      configure: --with-pdo-oci=instantclient,/usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/,${ORACLE_VERSION_MAJOR}
+    7.3:
+      type: builtin
+      configure: --with-pdo-oci=instantclient,/usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/,${ORACLE_VERSION_MAJOR}
+    7.4:
+      type: builtin
+      configure: --with-pdo-oci=instantclient,/usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/,${ORACLE_VERSION_MAJOR}
+    8.0:
+      type: builtin
+      configure: --with-pdo-oci=instantclient,/usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/,${ORACLE_VERSION_MAJOR}
+    all:
+      type: builtin
+      configure: --with-pdo-oci=instantclient,/usr,${ORACLE_VERSION_MAJOR}
+      pre: |
+        ORACLE_HREF="$( curl -sS https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/ | tac | tac | grep -Eo 'href="getPackage/oracle-instantclient.+basiclite.+rpm"' | tail -1 )" \
+        && ORACLE_VERSION_MAJOR="$( echo "${ORACLE_HREF}" | grep -Eo 'instantclient[.0-9]+' | sed 's/instantclient//g' )" \
+        && ORACLE_VERSION_FULL="$( echo "${ORACLE_HREF}" | grep -Eo 'basiclite-[-.0-9]+' | sed -e 's/basiclite-//g' -e 's/\.$//g' )" \
+        \
+        && rpm --import http://yum.oracle.com/RPM-GPG-KEY-oracle-ol7 \
+        && curl -o /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
+          https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/getPackage/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && curl -o /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
+          https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/getPackage/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && alien -i /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && alien -i /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && rm -f /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && rm -f /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
+        && (ln -s /usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/*.so* /usr/lib/ || true) \
+      build_dep: [alien]
+  pdo_odbc:
+    disabled: "{{ php_all_versions }}" # TODO: Build errors
+  pdo_pgsql:
+    all:
+      type: builtin
+      build_dep: [libpq-dev]
+      run_dep: [libpq5]
+  pdo_sqlite:
+    already_avail: "{{ php_all_versions }}"
+  pdo_sqlsrv:
+    disabled: [7.4, 8.0]
+    all:
+      type: pecl
+      build_dep: [unixodbc-dev]
+      run_dep: [unixodbc]
+  pgsql:
+    all:
+      type: builtin
+      build_dep: [libpq-dev]
+      run_dep: [libpq5]
+  psr:
+    disabled: [8.0] # IMPORTANT: Required by PHP >= 7.2 by phalcon >=4.0 module
+    all:
+      type: pecl
+  phalcon:
+    disabled: [8.0] # TODO: currently disabled for 7.4 as it breaks
+    all:
+      type: git
+      git_url: https://github.com/phalcon/cphalcon
+      git_ref: $(git for-each-ref --format='%(*creatordate:raw)%(creatordate:raw) %(refname)' refs/tags | sort -n | sed 's/^.*tags\///g' | grep -E '^v[.0-9]+$' | tail -1)
+      command: cd build && ./install
+  phar:
+    already_avail: [7.2, 7.3, 7.4, 8.0]
+  posix:
+    already_avail: "{{ php_all_versions }}"
+  pspell:
+    all:
+      type: builtin
+      build_dep: [libpspell-dev]
+      run_dep: [libaspell15]
+  readline:
+    already_avail: "{{ php_all_versions }}"
+  recode:
+    disabled: [7.4, 8.0]
+    all:
+      type: builtin
+      build_dep: [librecode-dev]
+      run_dep: [librecode0]
+  redis:
+    8.0:
+      type: git
+      git_url: https://github.com/phpredis/phpredis
+      git_ref: $(git for-each-ref --format='%(refname)' refs/tags | grep -E 'tags/[.0-9]+$' | sed 's|.*tags/||g' | sort -V | tail -1)
+      # TODO: This is a nasty work-around to fix current phpredis implementation for PHP 8.0
+      command: |
+        sed -i'' 's/, ZSTR_LEN(ra->algorithm)//g' redis_array_impl.c \
+        && phpize \
+        && ./configure --enable-redis \
+        && make -j$(getconf _NPROCESSORS_ONLN) \
+        && make install \
+    all:
+      type: pecl
+  reflection:
+    already_avail: [7.2, 7.3, 7.4, 8.0]
+  rdkafka:
+    disabled: [8.0]
+    all:
+      type: pecl
+      build_dep: [librdkafka-dev]
+      run_dep: [librdkafka1]
+  session:
+    already_avail: "{{ php_all_versions }}"
+  shmop:
+    all:
+      type: builtin
+  simplexml:
+    already_avail: "{{ php_all_versions }}"
+  snmp:
+    7.4:
+      type: builtin
+      build_dep: [libssl-dev, libsnmp-dev, snmp]
+      run_dep: [snmp]
+    all:
+      type: builtin
+      configure: --with-openssl-dir
+      build_dep: [libssl-dev, libsnmp-dev, snmp]
+      run_dep: [snmp]
+  soap:
+    7.4:
+      type: builtin
+    all:
+      type: builtin
+      configure: --with-libxml-dir=/usr
+      build_dep: [libxml2-dev]
+  sockets:
+    all:
+      type: builtin
+  sodium:
+    already_avail: [7.2, 7.3, 7.4]
+    all:
+      type: builtin
+      build_dep: [libsodium-dev]
+  solr:
+    disabled: [8.0]
+    all:
+      type: pecl
+      build_dep: [libxml2-dev, libcurl4-openssl-dev]
+  spl:
+    already_avail: "{{ php_all_versions }}"
+  sqlsrv:
+    disabled: [7.4, 8.0]
+    all:
+      type: pecl
+      build_dep: [unixodbc-dev]
+      run_dep: [unixodbc]
+  ssh2:
+    disabled: [8.0]
+    all:
+      type: pecl
+      version: 1.2
+      build_dep: [libssh2-1-dev]
+      run_dep: [libssh2-1]
+  swoole:
+    disabled: [8.0]
+    all:
+      type: pecl
+      command: yes yes | pecl install swoole
+      build_dep: [libnghttp2-dev, libssl-dev]
+      run_dep: [libnghttp2-14]
+  sysvmsg:
+    all:
+      type: builtin
+  sysvsem:
+    all:
+      type: builtin
+  sysvshm:
+    all:
+      type: builtin
+  tidy:
+    all:
+      type: builtin
+      build_dep: [libtidy-dev]
+      run_dep: [libtidy5deb1]
+  tokenizer:
+    already_avail: "{{ php_all_versions }}"
+  uploadprogress:
+    disabled: [8.0]
+    all:
+      type: git
+      git_url: https://github.com/php/pecl-php-uploadprogress
+      configure: --enable-uploadprogress
+  wddx:
+    # https://wiki.php.net/rfc/deprecate-and-remove-ext-wddx
+    disabled: [7.4, 8.0]
+    all:
+      type: builtin
+      configure: --with-libxml-dir=/usr
+      build_dep: [libxml2-dev]
+  xdebug:
+    disabled: [8.0]
+    all:
+      type: pecl
+  xml:
+    already_avail: "{{ php_all_versions }}"
+  xmlreader:
+    already_avail: "{{ php_all_versions }}"
+  xmlrpc:
+    7.4:
+      type: builtin
+      configure: --with-iconv-dir=/usr
+    all:
+      type: builtin
+      configure: --with-libxml-dir=/usr --with-iconv-dir=/usr
+      build_dep: [libxml2-dev]
+  xmlwriter:
+    already_avail: "{{ php_all_versions }}"
+  xsl:
+    all:
+      type: builtin
+      build_dep: [libxslt-dev]
+      run_dep: [libxslt1.1]
+  yaml:
+    disabled: [8.0]
+    all:
+      type: pecl
+      build_dep: [libyaml-dev]
+      run_dep: [libyaml-0-2]
+  zip:
+    7.4:
+      type: builtin
+      configure: --with-zip
+    all:
+      type: builtin
+      configure: --with-zlib-dir=/usr --with-pcre-dir=/usr --with-libzip
+      build_dep: [zlib1g-dev, libzip-dev]
+      run_dep: [libzip4]
