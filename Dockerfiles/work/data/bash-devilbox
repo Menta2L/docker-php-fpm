@@ -23,3 +23,37 @@ PS1_PHP="$( php -v 2>/dev/null | grep -Eo '^PHP\s([-_.a-zA-Z0-9])+' )"
 PS1_PHP="${PS1_PHP//PHP[[:space:]]}"
 PS1_USR="$( whoami )"
 PS1="${_clr_usr}${PS1_USR}${_clr_off}@${_clr_ver}php-${PS1_PHP}${_clr_off} in ${_clr_dir}\w${_clr_off} \$ "
+
+
+# Show Intro
+echo
+echo "------------------------------------------------------------------------------------------"
+echo "                              _            _ _ _               "
+echo "                             | |          (_) | |              "
+echo "                           __| | _____   ___| | |__   _____  __"
+echo "                          / _\` |/ _ \\ \\ / / | | '_ \\ / _ \\ \\/ /"
+echo "                         | (_| |  __/\\ V /| | | |_) | (_) >  < "
+echo "                          \\__,_|\\___| \\_/ |_|_|_.__/ \\___/_/\\_\\"
+echo "                                                               "
+echo "                                  http://devilbox.org"
+echo "                            https://devilbox.readthedocs.io"
+echo
+echo
+echo
+echo "                                    Available Tools"
+echo "          https://devilbox.readthedocs.io/en/latest/readings/available-tools.html"
+echo
+echo "                           How to work inside this PHP container"
+echo " https://devilbox.readthedocs.io/en/latest/intermediate/work-inside-the-php-container.html"
+echo
+echo
+echo
+echo "                    | Available Dirs   | Description                  |"
+echo "                    |------------------|------------------------------|"
+echo "                    | /shared/httpd    | Project base directory       |"
+echo "                    | /shared/backups  | Backup directory             |"
+echo "                    | /var/mail        | Email directory              |"
+echo "                    | /var/log         | Log file directory           |"
+echo
+echo "------------------------------------------------------------------------------------------"
+echo

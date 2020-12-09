@@ -17,7 +17,7 @@ php_settings_ini:
   # ---- Sane default ----
   base:
     # Memory
-    memory_limit:              512M
+    memory_limit:              256M
     # Timeouts
     max_execution_time:        "{{ php_timeout }}"
     max_input_time:            "{{ php_timeout }}"
@@ -44,11 +44,17 @@ php_settings_ini:
     xdebug_profiler_enable:    'Off'
     xdebug_remote_enable:      'Off'
     xdebug_remote_autostart:   'Off'
-
+    expose_php: 'On'
+    cookie_secure: 'On'
+    cookie_httponly: 'On'
+    cookie_samesite: 'On'
+    use_strict_mode: 'On'
+    cookie_lifetime: 0
   # ---- Inherits from base ----
   mods:
   # ---- Inherits from base ----
   prod:
+    expose_php: 'Off'
   # ---- Inherits from base and overwrites certain values ----
   work:
     # Error reporting
@@ -96,8 +102,8 @@ php_settings_fpm:
     pm_process_idle_timeout:   10s # only for pm: ondemand
 
     # User/Group
-    user:                      "{{ php_user }}"
-    group:                     "{{ php_group }}"
+    user:                      "{{ my_user }}"
+    group:                     "{{ my_group }}"
   # ---- Inherits from base ----
   mods:
   # ---- Inherits from base ----

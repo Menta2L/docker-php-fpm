@@ -5,10 +5,18 @@
 
 edit_comment_base: "# Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-base.j2 instead."
 edit_comment_mods: "# Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-mods.j2 instead."
+edit_comment_dev: "# Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-dev.j2 instead."
 edit_comment_prod: "# Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-prod.j2 instead."
 edit_comment_work: "# Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-work.j2 instead."
 
 
+my_user: "sandbox"
+my_group: "sandbox"
+my_uid : 1000
+my_guid : 1000
+maintainer_name : "vesco"
+maintainer_email : "vesco@jobs.bg"
+vendor: "menta2l"
 # -------------------------------------------------------------------------------------------------
 # Adds version checks to Dockerfile
 # -------------------------------------------------------------------------------------------------
@@ -22,10 +30,10 @@ build_fail_fast: False
 # Available PHP versions (see inventory)
 # -------------------------------------------------------------------------------------------------
 php_all_versions:
-  - 7.2
   - 7.3
   - 7.4
   - 8.0
+  - 8.1
 
 
 # -------------------------------------------------------------------------------------------------
@@ -34,21 +42,14 @@ php_all_versions:
 template_dockerfiles:
   - src: DOCKERFILES/Dockerfile-base.j2
     dst: "../../Dockerfiles/base/Dockerfile-{{ php_version }}"
-    key: base
-    alt: base
   - src: DOCKERFILES/Dockerfile-mods.j2
     dst: "../../Dockerfiles/mods/Dockerfile-{{ php_version }}"
-    key: mods
-    alt: mods
   - src: DOCKERFILES/Dockerfile-prod.j2
     dst: "../../Dockerfiles/prod/Dockerfile-{{ php_version }}"
-    key: prod
-    alt: prod
   - src: DOCKERFILES/Dockerfile-work.j2
     dst: "../../Dockerfiles/work/Dockerfile-{{ php_version }}"
-    key: work
-    alt: work
-
+  - src: DOCKERFILES/Dockerfile-dev.j2
+    dst: "../../Dockerfiles/dev/Dockerfile-{{ php_version }}"
 
 # -------------------------------------------------------------------------------------------------
 # Assign php.ini & php-fpm.conf to PHP versions
@@ -76,14 +77,8 @@ template_configurations:
     cfg: "{{ php_settings_fpm }}"
     key: work
     alt: base
-  # sudo-file
-  - src: SUDO-FILE/sudo-file.j2
-    dst: "../../Dockerfiles/work/data/sudo-file"
-    key: work
-    alt: work
 template_dockerfiles_vendor:
-  - src: DOCKERFILES/Dockerfile-vendor.j2
-    dst: "../../Dockerfiles/vendor/Dockerfile"
+  - src: DOCKERFILES/Dockerfile-{{ php_version }}.j2
+    dst: "../../Dockerfiles/vendor/Dockerfile-{{ php_version }}"
     key: vendor
     alt: vendor
-

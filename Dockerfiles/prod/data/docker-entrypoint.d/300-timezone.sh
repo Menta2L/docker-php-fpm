@@ -17,7 +17,7 @@ set_timezone() {
 	local php_ini_dir="${2}"
 	local debug="${3}"
 	local timezone=
-	local php_ini_file="${php_ini_dir}/${MY_USER}-runtime-timezone.ini"
+	local php_ini_file="${php_ini_dir}/devilbox-runtime-timezone.ini"
 
 	if ! env_set "${env_varname}"; then
 		log "info" "\$${env_varname} not set." "${debug}"

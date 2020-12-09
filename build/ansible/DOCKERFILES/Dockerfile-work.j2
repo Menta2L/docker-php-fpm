@@ -1,7 +1,26 @@
 {{ edit_comment_work }}
-FROM {{ docker_repo }}/php:{{ php_version }}-prod
+FROM devilbox/php-fpm:{{ php_version }}-prod
+MAINTAINER "cytopia" <cytopia@everythingcli.org>
 
-{% include './metadata.j2' %}
+
+###
+### Labels
+###
+# https://github.com/opencontainers/image-spec/blob/master/annotations.md
+#LABEL "org.opencontainers.image.created"=""
+#LABEL "org.opencontainers.image.version"=""
+#LABEL "org.opencontainers.image.revision"=""
+LABEL "maintainer"="cytopia <cytopia@everythingcli.org>"
+LABEL "org.opencontainers.image.authors"="cytopia <cytopia@everythingcli.org>"
+LABEL "org.opencontainers.image.url"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.documentation"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.source"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.vendor"="devilbox"
+LABEL "org.opencontainers.image.licenses"="MIT"
+LABEL "org.opencontainers.image.ref.name"="{{ php_version }}-work"
+LABEL "org.opencontainers.image.title"="PHP-FPM {{ php_version }}-work"
+LABEL "org.opencontainers.image.description"="PHP-FPM {{ php_version }}-work"
+
 
 ###
 ### Envs
@@ -57,6 +76,7 @@ RUN set -eux \
 		blackfire-agent \
 		build-essential \
 		bzip2 \
+		certbot \
 		coreutils \
 		dnsutils \
 		dos2unix \
@@ -68,6 +88,7 @@ RUN set -eux \
 		git-svn \
 		ghostscript \
 		graphviz \
+		gsfonts \
 		hostname \
 		htop \
 		imagemagick \
@@ -78,15 +99,14 @@ RUN set -eux \
 		libffi-dev \
 		libssl-dev \
 		libyaml-dev \
+		locales \
 		make \
 		mongodb-org-shell \
 		mongodb-org-tools \
 		moreutils \
-{% if php_version in [7.1, 7.2, 7.3, 7.4, 8.0] %}
 		mariadb-client \
-{% else %}
-		mysql-client \
-{% endif %}
+		mupdf \
+		mupdf-tools \
 		nano \
 		net-tools \
 		netcat \
@@ -180,10 +200,10 @@ RUN set -eux \
 	&& (rm -rf /root/.config || true) \
 	&& (rm -rf /root/.npm || true) \
 	\
-	&& (rm -rf /home/{{php_user}}/.cache || true) \
-	&& (rm -rf /home/{{php_user}}/.composer || true) \
-	&& (rm -rf /home/{{php_user}}/.config || true) \
-	&& (rm -rf /home/{{php_user}}/.npm || true) \
+	&& (rm -rf /home/devilbox/.cache || true) \
+	&& (rm -rf /home/devilbox/.composer || true) \
+	&& (rm -rf /home/devilbox/.config || true) \
+	&& (rm -rf /home/devilbox/.npm || true) \
 	\
 	&& (rm -rf /usr/local/src/composer/cache/* || true) \
 	&& rm -rf /tmp/* \
@@ -205,13 +225,13 @@ RUN set -eux \
 		{%- endif -%}
 		{#- Version specific gem version available? -#}
 		{%- if php_version in composer_available[tool] and 'version' in composer_available[tool][php_version] -%}
-			{{ "\n\t" }}&& COMPOSER_HOME="{{ composer_home }}" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer global require {{ composer_available[tool]['name'] }}:{{ composer_available[tool][php_version]['version'] }} \
+			{{ "\n\t" }}&& COMPOSER_HOME="{{ composer_home }}" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer-{{ composer_available[tool]['version'] }} global require {{ composer_available[tool]['name'] }}:{{ composer_available[tool][php_version]['version'] }} \
 		{#- Generic gem version  available? -#}
 		{%- elif 'all' in composer_available[tool] and 'version' in composer_available[tool]['all'] -%}
-			{{ "\n\t" }}&& COMPOSER_HOME="{{ composer_home }}" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer global require {{ composer_available[tool]['name'] }}:{{ composer_available[tool]['all']['version'] }} \
+			{{ "\n\t" }}&& COMPOSER_HOME="{{ composer_home }}" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer-{{ composer_available[tool]['version'] }} global require {{ composer_available[tool]['name'] }}:{{ composer_available[tool]['all']['version'] }} \
 		{#- No version info available -#}
 		{%- else -%}
-			{{ "\n\t" }}&& COMPOSER_HOME="{{ composer_home }}" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer global require  {{ composer_available[tool]['name'] }} \
+			{{ "\n\t" }}&& COMPOSER_HOME="{{ composer_home }}" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer-{{ composer_available[tool]['version'] }} global require  {{ composer_available[tool]['name'] }} \
 		{%- endif -%}
 		{#- Symlinks available? -#}
 		{%- if 'link' in composer_available[tool] -%}
@@ -258,13 +278,13 @@ RUN set -eux \
 		{%- endif -%}
 		{#- Version specific gem version available? -#}
 		{%- if php_version in npm_available[tool] and 'version' in npm_available[tool][php_version] -%}
-			{{ "\n\t" }}&& su -c '. /opt/nvm/nvm.sh; npm install -g --force {{ npm_available[tool]['name'] }} {{ npm_available[tool][php_version]['version'] }}' {{php_user}} \
+			{{ "\n\t" }}&& su -c '. /opt/nvm/nvm.sh; npm install -g --force {{ npm_available[tool]['name'] }} {{ npm_available[tool][php_version]['version'] }}' devilbox \
 		{#- Generic gem version  available? -#}
 		{%- elif 'all' in npm_available[tool] and 'version' in npm_available[tool]['all'] -%}
-			{{ "\n\t" }}&& su -c '. /opt/nvm/nvm.sh; npm install -g --force {{ npm_available[tool]['name'] }} {{ npm_available[tool]['all']['version'] }}' {{php_user}} \
+			{{ "\n\t" }}&& su -c '. /opt/nvm/nvm.sh; npm install -g --force {{ npm_available[tool]['name'] }} {{ npm_available[tool]['all']['version'] }}' devilbox \
 		{#- No version info available -#}
 		{%- else -%}
-			{{ "\n\t" }}&& su -c '. /opt/nvm/nvm.sh; npm install -g --force {{ npm_available[tool]['name'] }}' {{php_user}} \
+			{{ "\n\t" }}&& su -c '. /opt/nvm/nvm.sh; npm install -g --force {{ npm_available[tool]['name'] }}' devilbox \
 		{%- endif -%}
 		{#- Fail fast version -#}
 		{%- if build_fail_fast -%}
@@ -284,13 +304,13 @@ RUN set -eux \
 {%- else -%}
 	{{ "\n\t" }}\{{ "\n" }}
 {%- endif %}
-	&& ln -sf $(dirname $(su -c '. /opt/nvm/nvm.sh; nvm which current' {{php_user}}))/* /usr/local/bin/ \
+	&& ln -sf $(dirname $(su -c '. /opt/nvm/nvm.sh; nvm which current' devilbox))/* /usr/local/bin/ \
 	\
-	&& su -c '. /opt/nvm/nvm.sh; npm cache clear --force' {{php_user}} \
-	&& su -c '. /opt/nvm/nvm.sh; nvm cache clear --force' {{php_user}} \
-	&& rm -rf /home/{{php_user}}/.npm \
-	&& rm -rf /home/{{php_user}}/.cache \
-	&& rm -rf /home/{{php_user}}/.config \
+	&& su -c '. /opt/nvm/nvm.sh; npm cache clear --force' devilbox \
+	&& su -c '. /opt/nvm/nvm.sh; nvm cache clear --force' devilbox \
+	&& rm -rf /home/devilbox/.npm \
+	&& rm -rf /home/devilbox/.cache \
+	&& rm -rf /home/devilbox/.config \
 	&& rm -rf /tmp/* \
 	&& (rm -rf /tmp/.* || true) \
 	\
@@ -362,13 +382,13 @@ RUN set -eux \
 		{%- endif -%}
 		{#- Version specific gem version available? -#}
 		{%- if php_version in pip_available[tool] and 'version' in pip_available[tool][php_version] -%}
-			{{ "\n\t" }}&& pip install --no-cache-dir --force-reinstall {{ pip_available[tool]['name'] }}=={{ pip_available[tool][php_version]['version'] }} \
+			{{ "\n\t" }}&& pip install --no-cache-dir --force-reinstall {{ pip_available[tool]['name'] }}=={{ pip_available[tool][php_version]['version'] }} || true \
 		{#- Generic gem version  available? -#}
 		{%- elif 'all' in pip_available[tool] and 'version' in pip_available[tool]['all'] -%}
-			{{ "\n\t" }}&& pip install --no-cache-dir --force-reinstall {{ pip_available[tool]['name'] }}=={{ pip_available[tool]['all']['version'] }} \
+			{{ "\n\t" }}&& pip install --no-cache-dir --force-reinstall {{ pip_available[tool]['name'] }}=={{ pip_available[tool]['all']['version'] }} || true \
 		{#- No version info available -#}
 		{%- else -%}
-			{{ "\n\t" }}&& pip install --no-cache-dir --force-reinstall {{ pip_available[tool]['name'] }} \
+			{{ "\n\t" }}&& pip install --no-cache-dir --force-reinstall {{ pip_available[tool]['name'] }} || true \
 		{%- endif -%}
 		{#- Fail fast version -#}
 		{%- if build_fail_fast -%}
@@ -402,11 +422,14 @@ RUN set -eux \
 ###
 RUN \
 	{ \
-		echo "PATH=\${PATH}:/usr/local/bin:/usr/local/sbin:\${HOME}/.yarn/bin:/opt/nvm/versions/node/\$(nvm version default)/bin"; \
+		echo 'PATH="${PATH}:${HOME}/.yarn/bin"'; \
+		echo 'PATH="${PATH}:${HOME}/.composer/vendor/bin"'; \
+		echo 'PATH="${PATH}:/usr/local/bin:/usr/local/sbin"'; \
+		echo 'PATH="${PATH}:/opt/nvm/versions/node/$(nvm version default)/bin"'; \
 		echo "export PATH"; \
-		echo ". /etc/bash-{{php_user}}"; \
-		echo "if [ -d /etc/bashrc-{{php_user}}.d/ ]; then"; \
-		echo "    for f in /etc/bashrc-{{php_user}}.d/*.sh ; do"; \
+		echo ". /etc/bash-devilbox"; \
+		echo "if [ -d /etc/bashrc-devilbox.d/ ]; then"; \
+		echo "    for f in /etc/bashrc-devilbox.d/*.sh ; do"; \
 		echo "        if [ -r \"\${f}\" ]; then"; \
 		echo "            . \"\${f}\""; \
 		echo "        fi"; \
@@ -484,8 +507,8 @@ RUN set -eux \
 	{%- endif -%}
 {% endfor %}{{ "\n\t" }}\
 # -------------------- Cleanup --------------------
-	&& rm -rf /home/{{php_user}}/.cache/ \
-	&& rm -rf /home/{{php_user}}/.config/ \
+	&& rm -rf /home/devilbox/.cache/ \
+	&& rm -rf /home/devilbox/.config/ \
 	&& rm -rf /root/.ansible \
 	&& rm -rf /root/.console \
 	&& rm -rf /root/.composer \
@@ -499,13 +522,13 @@ RUN set -eux \
 ###
 ### Copy files
 ###
-COPY ./data/php-ini.d/php-{{ php_version }}.ini /usr/local/etc/php/conf.d/xxx-{{php_user}}-default-php.ini
+COPY ./data/php-ini.d/php-{{ php_version }}.ini /usr/local/etc/php/conf.d/xxx-devilbox-default-php.ini
 COPY ./data/php-fpm.conf/php-fpm-{{ php_version }}.conf /usr/local/etc/php-fpm.conf
 
 COPY ./data/docker-entrypoint.sh /docker-entrypoint.sh
 COPY ./data/docker-entrypoint.d/*.sh /docker-entrypoint.d/
-COPY ./data/bash-{{php_user}} /etc/bash-{{php_user}}
-COPY ./data/sudo-{{php_user}} /etc/sudoers.d/{{php_user}}
+COPY ./data/bash-devilbox /etc/bash-devilbox
+COPY ./data/sudo-devilbox /etc/sudoers.d/devilbox
 
 
 ###

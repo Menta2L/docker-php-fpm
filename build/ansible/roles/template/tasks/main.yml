@@ -8,6 +8,7 @@
     mode:  0644
   with_items:
     - "{{ template_dockerfiles }}"
+  when: inventory_hostname in groups['php']
 
 - name: generate php configuration files
   template:

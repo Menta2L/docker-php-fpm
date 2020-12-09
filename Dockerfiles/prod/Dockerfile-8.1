@@ -1,0 +1,280 @@
+# Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-prod.j2 instead.
+FROM menta2l/php-fpm:8.1-base as builder
+
+
+###
+### Install
+###
+RUN set -eux \
+	&& DEBIAN_FRONTEND=noninteractive apt-get update -qq \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests apt-utils \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
+		libenchant-dev \
+		libevent-dev \
+		libmemcached-dev \
+		libsasl2-dev \
+		libssl-dev \
+		zlib1g-dev \
+		ca-certificates \
+		git
+
+
+# Fix timezone (only required for testing to stop php -v and php-fpm -v from complaining to stderr)
+RUN set -eux \
+	&& echo "date.timezone=UTC" > /usr/local/etc/php/php.ini
+
+
+###
+### Install and enable PHP modules
+###
+# Enable ffi if it exists
+RUN set -eux \
+	&& if [ -f /usr/local/etc/php/conf.d/docker-php-ext-ffi.ini ]; then \
+			echo "ffi.enable = 1" >> /usr/local/etc/php/conf.d/docker-php-ext-ffi.ini; \
+		fi
+
+# -------------------- Installing PHP Extension: enchant --------------------
+RUN set -eux \
+	# Installation: Generic
+	# Type:         Built-in extension
+	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) enchant \
+	&& true
+
+
+# -------------------- Installing PHP Extension: mongodb --------------------
+RUN set -eux \
+	# Installation: Version specific
+	# Type:         GIT extension
+	&& git clone https://github.com/mongodb/mongo-php-driver /tmp/mongodb \
+	&& cd /tmp/mongodb \
+	# Custom:       Install command
+	&& git submodule update --init \
+&& phpize \
+&& ./configure --enable-mongodb \
+&& make -j$(getconf _NPROCESSORS_ONLN) \
+&& make install \
+ \
+	# Enabling
+	&& docker-php-ext-enable mongodb \
+	&& true
+
+
+# -------------------- Installing PHP Extension: memcached --------------------
+RUN set -eux \
+	# Installation: Version specific
+	# Type:         GIT extension
+	&& git clone https://github.com/php-memcached-dev/php-memcached /tmp/memcached \
+	&& cd /tmp/memcached \
+	# Custom:       Branch
+	&& git checkout master \
+	# Custom:       Install command
+	&& true \
+# FIXME: This is a work-around to mitigate compile error with PHP 8.1
+&& sed -i'' 's/\sTSRMLS_CC//g' php_memcached_session.c \
+&& phpize \
+&& ./configure --enable-memcached \
+&& make -j$(getconf _NPROCESSORS_ONLN) \
+&& make install \
+ \
+	# Enabling
+	&& docker-php-ext-enable memcached \
+	&& true
+
+
+# -------------------- Installing PHP Extension: redis --------------------
+RUN set -eux \
+	# Installation: Version specific
+	# Type:         GIT extension
+	&& git clone https://github.com/phpredis/phpredis /tmp/redis \
+	&& cd /tmp/redis \
+	# Custom:       Branch
+	&& git checkout $(git for-each-ref --format='%(refname)' refs/tags | grep -E 'tags/[.0-9]+$' | sed 's|.*tags/||g' | sort -V | tail -1) \
+	# Custom:       Install command
+	&& sed -i'' 's/, ZSTR_LEN(ra->algorithm)//g' redis_array_impl.c \
+&& sed -i'' 's|.*sctx->cb\.no_separation.*||g' library.c \
+&& sed -i'' 's|.*sctx->cb\.no_separation.*||g' redis_array_impl.c \
+&& sed -i'' 's|.*sctx->cb\.no_separation.*||g' cluster_library.c \
+&& sed -i'' 's|.*->no_separation.*||g' redis_array_impl.c \
+&& phpize \
+&& ./configure --enable-redis \
+&& make -j$(getconf _NPROCESSORS_ONLN) \
+&& make install \
+ \
+	# Enabling
+	&& docker-php-ext-enable redis \
+	&& true
+
+
+
+
+# Fix php.ini settings for enabled extensions
+RUN set -eux \
+	&& chmod +x "$(php -r 'echo ini_get("extension_dir");')"/*
+
+# Fix oracle dir for images that don't have oci installed
+RUN set -eux \
+	&& mkdir -p /usr/lib/oracle/
+
+# Shrink everything down
+RUN set -eux \
+	&& (find /usr/local/bin -type f -print0 | xargs -n1 -0 strip --strip-all -p 2>/dev/null || true) \
+	&& (find /usr/local/lib -type f -print0 | xargs -n1 -0 strip --strip-all -p 2>/dev/null || true) \
+	&& (find /usr/local/sbin -type f -print0 | xargs -n1 -0 strip --strip-all -p 2>/dev/null || true)
+
+
+
+# Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-prod.j2 instead.
+FROM menta2l/php-fpm:8.1-base as final
+MAINTAINER "vesco" <vesco@jobs.bg>
+
+###
+### Labels
+###
+# https://github.com/opencontainers/image-spec/blob/master/annotations.md
+#LABEL "org.opencontainers.image.created"=""
+#LABEL "org.opencontainers.image.version"=""
+#LABEL "org.opencontainers.image.revision"=""
+LABEL "maintainer"="vesco <vesco@jobs.bg>"
+LABEL "org.opencontainers.image.authors"="vesco <vesco@jobs.bg>"
+LABEL "org.opencontainers.image.url"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.documentation"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.source"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.vendor"="devilbox"
+LABEL "org.opencontainers.image.licenses"="MIT"
+LABEL "org.opencontainers.image.ref.name"="8.1-mods"
+LABEL "org.opencontainers.image.title"="PHP-FPM 8.1-mods"
+LABEL "org.opencontainers.image.description"="PHP-FPM 8.1-mods"
+
+
+###
+### Copy artifacts from builder
+###
+ARG EXT_DIR
+COPY --from=builder ${EXT_DIR}/ ${EXT_DIR}/
+COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY --from=builder /usr/lib/oracle/ /usr/lib/oracle/
+
+
+###
+### Install
+###
+RUN set -eux \
+	&& DEBIAN_FRONTEND=noninteractive apt-get update -qq \
+	&& DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
+	libenchant1c2a \
+	libmemcachedutil2 \
+	ca-certificates \
+	&& rm -rf /var/lib/apt/lists/* \
+	\
+	&& update-ca-certificates
+
+
+###
+### Post Install
+###
+###
+### Install custom software
+###
+RUN set -eux \
+# -------------------- composer --------------------
+	&& curl -sS -L --fail https://getcomposer.org/composer-1.phar > /usr/local/bin/composer-1 \
+&& curl -sS -L --fail https://getcomposer.org/composer-2.phar > /usr/local/bin/composer-2 \
+&& chmod +x /usr/local/bin/composer-1 \
+&& chmod +x /usr/local/bin/composer-2 \
+&& ln -sf /usr/local/bin/composer-2 /usr/local/bin/composer \
+ \
+	\
+# -------------------- cleanup --------------------
+	&& rm -rf /home/${MY_USER}/.*json \
+&& rm -rf /home/${MY_USER}/.cache \
+&& rm -rf /home/${MY_USER}/.composer \
+&& rm -rf /home/${MY_USER}/.config \
+&& rm -rf /home/${MY_USER}/.drush \
+&& rm -rf /home/${MY_USER}/.subversion \
+&& rm -rf /home/${MY_USER}/.v8* \
+\
+&& rm -rf /root/.*json \
+&& rm -rf /root/.cache \
+&& rm -rf /root/.composer \
+&& rm -rf /root/.config \
+&& rm -rf /root/.drush \
+&& rm -rf /root/.subversion \
+&& rm -rf /root/.v8* \
+\
+&& rm -rf /tmp/* \
+&& (rm -rf /tmp/.* || true) \
+ \
+	\
+	\
+	&& (rm -rf /root/.gem || true ) \
+	&& (rm -rf /root/.cache || true) \
+	&& (rm -rf /root/.composer || true) \
+	&& (rm -rf /root/.config || true) \
+	&& (rm -rf /root/.npm || true) \
+	\
+	&& (rm -rf /home/sandbox/.cache || true) \
+	&& (rm -rf /home/sandbox/.composer || true) \
+	&& (rm -rf /home/sandbox/.config || true) \
+	&& (rm -rf /home/sandbox/.npm || true) \
+	\
+	&& (rm -rf /usr/local/src/composer/cache/* || true) \
+	&& rm -rf /tmp/* \
+	&& (rm -rf /tmp/.* || true)
+###
+### TODO Check installed software 
+###
+
+###
+### Verify
+###
+RUN set -eux \
+	&& echo "date.timezone=UTC" > /usr/local/etc/php/php.ini \
+	&& php -v | grep -oE 'PHP\s[.0-9]+' | grep -oE '[.0-9]+' | grep '^8.1' \
+	&& /usr/local/sbin/php-fpm --test \
+	\
+	&& PHP_ERROR="$( php -v 2>&1 1>/dev/null )" \
+	&& if [ -n "${PHP_ERROR}" ]; then echo "${PHP_ERROR}"; false; fi \
+	&& PHP_ERROR="$( php -i 2>&1 1>/dev/null )" \
+	&& if [ -n "${PHP_ERROR}" ]; then echo "${PHP_ERROR}"; false; fi \
+	\
+	&& PHP_FPM_ERROR="$( php-fpm -v 2>&1 1>/dev/null )" \
+	&& if [ -n "${PHP_FPM_ERROR}" ]; then echo "${PHP_FPM_ERROR}"; false; fi \
+	&& PHP_FPM_ERROR="$( php-fpm -i 2>&1 1>/dev/null )" \
+	&& if [ -n "${PHP_FPM_ERROR}" ]; then echo "${PHP_FPM_ERROR}"; false; fi \
+	&& rm -f /usr/local/etc/php/php.ini \
+	\
+	&& php -m | grep -oiE '^enchant$' \
+	&& php-fpm -m | grep -oiE '^enchant$' \
+	&& php -m | grep -oiE '^libxml$' \
+	&& php-fpm -m | grep -oiE '^libxml$' \
+	&& php -m | grep -oiE '^mongodb$' \
+	&& php-fpm -m | grep -oiE '^mongodb$' \
+	&& php -m | grep -oiE '^memcached$' \
+	&& php-fpm -m | grep -oiE '^memcached$' \
+	&& php -m | grep -oiE '^readline$' \
+	&& php -m | grep -oiE '^redis$' \
+	&& php-fpm -m | grep -oiE '^redis$' \
+	&& php -m | grep -oiE '^simplexml$' \
+	&& php-fpm -m | grep -oiE '^simplexml$' \
+	&& php -m | grep -oiE '^xml$' \
+	&& php-fpm -m | grep -oiE '^xml$' \
+	&& php -m | grep -oiE '^xmlreader$' \
+	&& php-fpm -m | grep -oiE '^xmlreader$' \
+	&& php -m | grep -oiE '^xmlwriter$' \
+	&& php-fpm -m | grep -oiE '^xmlwriter$' \
+	&& true
+
+
+###
+### Ports
+###
+EXPOSE 9000
+
+
+###
+### Entrypoint
+###
+CMD ["/usr/local/sbin/php-fpm"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

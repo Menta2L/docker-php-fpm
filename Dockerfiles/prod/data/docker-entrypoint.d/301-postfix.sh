@@ -21,7 +21,7 @@ set_postfix() {
 	local docker_logs="${6}"
 	local debug="${7}"
 
-	local php_ini_file="${php_ini_dir}/${MY_USER}-runtime-sendmail.ini"
+	local php_ini_file="${php_ini_dir}/devilbox-runtime-sendmail.ini"
 	local enable_mail=
 
 	# Verify env value

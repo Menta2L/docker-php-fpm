@@ -1,5 +1,5 @@
 # Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-mods.j2 instead.
-FROM docker.jobs.bg/veraxnet/php:8.0-base as builder
+FROM menta2l/php-fpm:8.0-base as builder
 
 
 ###
@@ -9,36 +9,22 @@ RUN set -eux \
 	&& DEBIAN_FRONTEND=noninteractive apt-get update -qq \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests apt-utils \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
-		alien \
-		firebird-dev \
-		freetds-dev \
-		libaio-dev \
 		libbz2-dev \
 		libenchant-dev \
-		libevent-dev \
-		libfbclient2 \
 		libfreetype6-dev \
 		libgmp-dev \
-		libib-util \
 		libicu-dev \
 		libjpeg-dev \
-		libldap2-dev \
-		libmemcached-dev \
 		libpng-dev \
-		libpq-dev \
 		libpspell-dev \
 		libsasl2-dev \
-		libsnmp-dev \
 		libsodium-dev \
 		libssl-dev \
 		libtidy-dev \
 		libvpx-dev \
 		libwebp-dev \
-		libxml2-dev \
 		libxpm-dev \
-		libxslt-dev \
 		libzip-dev \
-		snmp \
 		zlib1g-dev \
 		ca-certificates \
 		git
@@ -82,14 +68,6 @@ RUN set -eux \
 	&& true
 
 
-# -------------------- Installing PHP Extension: dba --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) dba \
-	&& true
-
-
 # -------------------- Installing PHP Extension: enchant --------------------
 RUN set -eux \
 	# Installation: Generic
@@ -113,7 +91,7 @@ RUN set -eux \
 	# Installation: Version specific
 	# Type:         Built-in extension
 	# Custom:       configure command
-	&& docker-php-ext-configure gd --enable-gd --with-webp --with-jpeg --with-xpm --with-freetype --enable-gd-jis-conv \
+	&& docker-php-ext-configure gd --enable-gd --with-webp --with-jpeg --with-xpm --with-freetype \
 	# Installation
 	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) gd \
 	&& true
@@ -145,40 +123,6 @@ RUN set -eux \
 	&& true
 
 
-# -------------------- Installing PHP Extension: ldap --------------------
-RUN set -eux \
-	# Generic pre-command
-	&& ln -s /usr/lib/x86_64-linux-gnu/libldap* /usr/lib/ \
-	# Installation: Generic
-	# Type:         Built-in extension
-	# Custom:       configure command
-	&& docker-php-ext-configure ldap --with-ldap --with-ldap-sasl \
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) ldap \
-	&& true
-
-
-# -------------------- Installing PHP Extension: memcached --------------------
-RUN set -eux \
-	# Installation: Version specific
-	# Type:         GIT extension
-	&& git clone https://github.com/php-memcached-dev/php-memcached /tmp/memcached \
-	&& cd /tmp/memcached \
-	# Custom:       Branch
-	&& git checkout master \
-	# Custom:       Install command
-	&& true \
-# FIXME: This is a work-around to mitigate compile error with PHP 8.0
-&& sed -i'' 's/\sTSRMLS_CC//g' php_memcached_session.c \
-&& phpize \
-&& ./configure --enable-memcached \
-&& make -j$(getconf _NPROCESSORS_ONLN) \
-&& make install \
- \
-	# Enabling
-	&& docker-php-ext-enable memcached \
-	&& true
-
-
 # -------------------- Installing PHP Extension: mongodb --------------------
 RUN set -eux \
 	# Installation: Version specific
@@ -186,34 +130,10 @@ RUN set -eux \
 	&& git clone https://github.com/mongodb/mongo-php-driver /tmp/mongodb \
 	&& cd /tmp/mongodb \
 	# Custom:       Install command
-	&& git checkout v1.6 \
-&& git submodule update --init \
-# FIXME: This is a work-around to mitigate compile error with PHP 8.0
-&& rgrep -I 'TSRMLS_C' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_C)/)/g' \
-&& rgrep -I 'TSRMLS_C' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_C,/,/g' \
-&& rgrep -I 'TSRMLS_CC' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_CC)/)/g' \
-&& rgrep -I 'TSRMLS_CC' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_CC,/,/g' \
-&& rgrep -I 'TSRMLS_DC' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_DC)/)/g' \
-&& rgrep -I 'TSRMLS_DC' | cut -d':' -f1 | sort -u | xargs -n1 sed -i'' 's/TSRMLS_DC,/,/g' \
-&& sed -i'' 's/TSRMLS_SET_CTX(ctx);/\/\/TSRMLS_SET_CTX(ctx);/g' php_phongo.c \
-&& sed -i'' 's/TSRMLS_FETCH();/\/\/TSRMLS_FETCH();/g' php_phongo.c \
-&& sed -i'' 's/TSRMLS_FETCH();/\/\/TSRMLS_FETCH();/g' phongo_compat.h \
-&& sed -i'' 's/TSRMLS_FETCH();/\/\/TSRMLS_FETCH();/g' src/bson.c \
-\
-&& sed -i'' 's/php_phongo_handler_binary.compare_objects.*//g' src/BSON/Binary.c \
-&& sed -i'' 's/php_phongo_handler_dbpointer.compare_objects.*//g' src/BSON/DBPointer.c \
-&& sed -i'' 's/php_phongo_handler_int64.compare_objects.*//g' src/BSON/Int64.c \
-&& sed -i'' 's/php_phongo_handler_javascript.compare_objects.*//g' src/BSON/Javascript.c \
-&& sed -i'' 's/php_phongo_handler_objectid.compare_objects.*//g' src/BSON/ObjectId.c \
-&& sed -i'' 's/php_phongo_handler_symbol.compare_objects.*//g' src/BSON/Symbol.c \
-&& sed -i'' 's/php_phongo_handler_timestamp.compare_objects.*//g' src/BSON/Timestamp.c \
-&& sed -i'' 's/php_phongo_handler_regex.compare_objects.*//g' src/BSON/Regex.c \
-&& sed -i'' 's/php_phongo_handler_server.compare_objects.*//g' src/MongoDB/Server.c \
-&& sed -i'' 's/php_phongo_handler_utcdatetime.compare_objects.*//g' src/BSON/UTCDateTime.c \
-\
+	&& git submodule update --init \
 && phpize \
 && ./configure --enable-mongodb \
-&& make all \
+&& make -j$(getconf _NPROCESSORS_ONLN) \
 && make install \
  \
 	# Enabling
@@ -226,37 +146,6 @@ RUN set -eux \
 	# Installation: Generic
 	# Type:         Built-in extension
 	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) mysqli \
-	&& true
-
-
-# -------------------- Installing PHP Extension: oci8 --------------------
-RUN set -eux \
-	# Generic pre-command
-	&& ORACLE_HREF="$( curl -sS https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/ | tac | tac | grep -Eo 'href="getPackage/oracle-instantclient.+basiclite.+rpm"' | tail -1 )" \
-&& ORACLE_VERSION_MAJOR="$( echo "${ORACLE_HREF}" | grep -Eo 'instantclient[.0-9]+' | sed 's/instantclient//g' )" \
-&& ORACLE_VERSION_FULL="$( echo "${ORACLE_HREF}" | grep -Eo 'basiclite-[-.0-9]+' | sed -e 's/basiclite-//g' -e 's/\.$//g' )" \
-\
-&& rpm --import http://yum.oracle.com/RPM-GPG-KEY-oracle-ol7 \
-&& curl -o /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
-  https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/getPackage/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& curl -o /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
-  https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/getPackage/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& alien -i /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& alien -i /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& rm -f /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& rm -f /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
- \
-	# Installation: Generic
-	# Type:         Built-in extension
-	# Custom:       configure command
-	&& docker-php-ext-configure oci8 --with-oci8=instantclient,/usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/,${ORACLE_VERSION_MAJOR} \
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) oci8 \
-	# Generic post-command
-	&& ORACLE_HREF="$( curl -sS https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/ | tac | tac | grep -Eo 'href="getPackage/oracle-instantclient.+basiclite.+rpm"' | tail -1 )" \
-&& ORACLE_VERSION_MAJOR="$( echo "${ORACLE_HREF}" | grep -Eo 'instantclient[.0-9]+' | sed 's/instantclient//g' )" \
-&& ORACLE_VERSION_FULL="$( echo "${ORACLE_HREF}" | grep -Eo 'basiclite-[-.0-9]+' | sed -e 's/basiclite-//g' -e 's/\.$//g' )" \
-&& (ln -sf /usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/*.so* /usr/lib/ || true) \
- \
 	&& true
 
 
@@ -276,24 +165,6 @@ RUN set -eux \
 	&& true
 
 
-# -------------------- Installing PHP Extension: pdo_dblib --------------------
-RUN set -eux \
-	# Generic pre-command
-	&& ln -s /usr/lib/x86_64-linux-gnu/libsybdb.* /usr/lib/ \
-	# Installation: Generic
-	# Type:         Built-in extension
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) pdo_dblib \
-	&& true
-
-
-# -------------------- Installing PHP Extension: pdo_firebird --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) pdo_firebird \
-	&& true
-
-
 # -------------------- Installing PHP Extension: pdo_mysql --------------------
 RUN set -eux \
 	# Installation: Generic
@@ -301,49 +172,6 @@ RUN set -eux \
 	# Custom:       configure command
 	&& docker-php-ext-configure pdo_mysql --with-zlib-dir=/usr \
 	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) pdo_mysql \
-	&& true
-
-
-# -------------------- Installing PHP Extension: pdo_oci --------------------
-RUN set -eux \
-	# Generic pre-command
-	&& ORACLE_HREF="$( curl -sS https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/ | tac | tac | grep -Eo 'href="getPackage/oracle-instantclient.+basiclite.+rpm"' | tail -1 )" \
-&& ORACLE_VERSION_MAJOR="$( echo "${ORACLE_HREF}" | grep -Eo 'instantclient[.0-9]+' | sed 's/instantclient//g' )" \
-&& ORACLE_VERSION_FULL="$( echo "${ORACLE_HREF}" | grep -Eo 'basiclite-[-.0-9]+' | sed -e 's/basiclite-//g' -e 's/\.$//g' )" \
-\
-&& rpm --import http://yum.oracle.com/RPM-GPG-KEY-oracle-ol7 \
-&& curl -o /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
-  https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/getPackage/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& curl -o /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
-  https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/getPackage/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& alien -i /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& alien -i /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& rm -f /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-basiclite-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& rm -f /tmp/oracle-instantclient${ORACLE_VERSION_MAJOR}-devel-${ORACLE_VERSION_FULL}.x86_64.rpm \
-&& (ln -s /usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/*.so* /usr/lib/ || true) \
- \
-	# Installation: Version specific
-	# Type:         Built-in extension
-	# Custom:       configure command
-	&& docker-php-ext-configure pdo_oci --with-pdo-oci=instantclient,/usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/,${ORACLE_VERSION_MAJOR} \
-	# Installation
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) pdo_oci \
-	&& true
-
-
-# -------------------- Installing PHP Extension: pdo_pgsql --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) pdo_pgsql \
-	&& true
-
-
-# -------------------- Installing PHP Extension: pgsql --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) pgsql \
 	&& true
 
 
@@ -365,6 +193,10 @@ RUN set -eux \
 	&& git checkout $(git for-each-ref --format='%(refname)' refs/tags | grep -E 'tags/[.0-9]+$' | sed 's|.*tags/||g' | sort -V | tail -1) \
 	# Custom:       Install command
 	&& sed -i'' 's/, ZSTR_LEN(ra->algorithm)//g' redis_array_impl.c \
+&& sed -i'' 's|.*sctx->cb\.no_separation.*||g' library.c \
+&& sed -i'' 's|.*sctx->cb\.no_separation.*||g' redis_array_impl.c \
+&& sed -i'' 's|.*sctx->cb\.no_separation.*||g' cluster_library.c \
+&& sed -i'' 's|.*->no_separation.*||g' redis_array_impl.c \
 && phpize \
 && ./configure --enable-redis \
 && make -j$(getconf _NPROCESSORS_ONLN) \
@@ -372,34 +204,6 @@ RUN set -eux \
  \
 	# Enabling
 	&& docker-php-ext-enable redis \
-	&& true
-
-
-# -------------------- Installing PHP Extension: shmop --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) shmop \
-	&& true
-
-
-# -------------------- Installing PHP Extension: snmp --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	# Custom:       configure command
-	&& docker-php-ext-configure snmp --with-openssl-dir \
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) snmp \
-	&& true
-
-
-# -------------------- Installing PHP Extension: soap --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	# Custom:       configure command
-	&& docker-php-ext-configure soap --with-libxml-dir=/usr \
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) soap \
 	&& true
 
 
@@ -435,37 +239,11 @@ RUN set -eux \
 	&& true
 
 
-# -------------------- Installing PHP Extension: sysvshm --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) sysvshm \
-	&& true
-
-
 # -------------------- Installing PHP Extension: tidy --------------------
 RUN set -eux \
 	# Installation: Generic
 	# Type:         Built-in extension
 	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) tidy \
-	&& true
-
-
-# -------------------- Installing PHP Extension: xmlrpc --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	# Custom:       configure command
-	&& docker-php-ext-configure xmlrpc --with-libxml-dir=/usr --with-iconv-dir=/usr \
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) xmlrpc \
-	&& true
-
-
-# -------------------- Installing PHP Extension: xsl --------------------
-RUN set -eux \
-	# Installation: Generic
-	# Type:         Built-in extension
-	&& docker-php-ext-install -j$(getconf _NPROCESSORS_ONLN) xsl \
 	&& true
 
 
@@ -498,9 +276,8 @@ RUN set -eux \
 
 
 # Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-mods.j2 instead.
-FROM docker.jobs.bg/veraxnet/php-fpm:8.0-base as final
-
-MAINTAINER vesco <vesco@jobs.bg>
+FROM menta2l/php-fpm:8.0-base as final
+MAINTAINER "vesco" <vesco@jobs.bg>
 
 ###
 ### Labels
@@ -511,10 +288,10 @@ MAINTAINER vesco <vesco@jobs.bg>
 #LABEL "org.opencontainers.image.revision"=""
 LABEL "maintainer"="vesco <vesco@jobs.bg>"
 LABEL "org.opencontainers.image.authors"="vesco <vesco@jobs.bg>"
-LABEL "org.opencontainers.image.url"="https://git.infra.verax.net/veraxnet/docker-php-fpm"
-LABEL "org.opencontainers.image.documentation"="https://git.infra.verax.net/veraxnet/docker-php-fpm"
-LABEL "org.opencontainers.image.source"="https://git.infra.verax.net/veraxnet/docker-php-fpm"
-LABEL "org.opencontainers.image.vendor"="veraxnet"
+LABEL "org.opencontainers.image.url"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.documentation"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.source"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.vendor"="devilbox"
 LABEL "org.opencontainers.image.licenses"="MIT"
 LABEL "org.opencontainers.image.ref.name"="8.0-mods"
 LABEL "org.opencontainers.image.title"="PHP-FPM 8.0-mods"
@@ -527,6 +304,8 @@ LABEL "org.opencontainers.image.description"="PHP-FPM 8.0-mods"
 ARG EXT_DIR
 COPY --from=builder ${EXT_DIR}/ ${EXT_DIR}/
 COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/lib/oracle/ /usr/lib/oracle/
 
 
@@ -536,25 +315,17 @@ COPY --from=builder /usr/lib/oracle/ /usr/lib/oracle/
 RUN set -eux \
 	&& DEBIAN_FRONTEND=noninteractive apt-get update -qq \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
-	libaio1 \
 	libaspell15 \
 	libenchant1c2a \
-	libfbclient2 \
-	libffi6 \
 	libfreetype6 \
 	libicu63 \
 	libjpeg62-turbo \
-	libmemcachedutil2 \
 	libpng16-16 \
-	libpq5 \
-	libsybdb5 \
 	libtidy5deb1 \
 	libvpx5 \
 	libwebp6 \
 	libxpm4 \
-	libxslt1.1 \
 	libzip4 \
-	snmp \
 	ca-certificates \
 	&& rm -rf /var/lib/apt/lists/* \
 	\
@@ -564,16 +335,6 @@ RUN set -eux \
 ###
 ### Post Install
 ###
-RUN set -eux \
-	# ---------- oci8 ----------
-	&& ORACLE_HREF="$( curl -sS https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient/x86_64/ | tac | tac | grep -Eo 'href="getPackage/oracle-instantclient.+basiclite.+rpm"' | tail -1 )" \
-&& ORACLE_VERSION_MAJOR="$( echo "${ORACLE_HREF}" | grep -Eo 'instantclient[.0-9]+' | sed 's/instantclient//g' )" \
-&& ORACLE_VERSION_FULL="$( echo "${ORACLE_HREF}" | grep -Eo 'basiclite-[-.0-9]+' | sed -e 's/basiclite-//g' -e 's/\.$//g' )" \
-&& (ln -sf /usr/lib/oracle/${ORACLE_VERSION_MAJOR}/client64/lib/*.so* /usr/lib/ || true) \
-  \
-	&& true
-
-
 ###
 ### Verify
 ###
@@ -603,22 +364,16 @@ RUN set -eux \
 	&& php-fpm -m | grep -oiE '^ctype$' \
 	&& php -m | grep -oiE '^curl$' \
 	&& php-fpm -m | grep -oiE '^curl$' \
-	&& php -m | grep -oiE '^dba$' \
-	&& php-fpm -m | grep -oiE '^dba$' \
 	&& php -m | grep -oiE '^dom$' \
 	&& php-fpm -m | grep -oiE '^dom$' \
 	&& php -m | grep -oiE '^enchant$' \
 	&& php-fpm -m | grep -oiE '^enchant$' \
 	&& php -m | grep -oiE '^exif$' \
 	&& php-fpm -m | grep -oiE '^exif$' \
-	&& php -m | grep -oiE '^ffi$' \
-	&& php-fpm -m | grep -oiE '^ffi$' \
 	&& php -m | grep -oiE '^fileinfo$' \
 	&& php-fpm -m | grep -oiE '^fileinfo$' \
 	&& php -m | grep -oiE '^filter$' \
 	&& php-fpm -m | grep -oiE '^filter$' \
-	&& php -m | grep -oiE '^ftp$' \
-	&& php-fpm -m | grep -oiE '^ftp$' \
 	&& php -m | grep -oiE '^gd$' \
 	&& php-fpm -m | grep -oiE '^gd$' \
 	&& php -m | grep -oiE '^gettext$' \
@@ -633,22 +388,16 @@ RUN set -eux \
 	&& php-fpm -m | grep -oiE '^intl$' \
 	&& php -m | grep -oiE '^json$' \
 	&& php-fpm -m | grep -oiE '^json$' \
-	&& php -m | grep -oiE '^ldap$' \
-	&& php-fpm -m | grep -oiE '^ldap$' \
 	&& php -m | grep -oiE '^libxml$' \
 	&& php-fpm -m | grep -oiE '^libxml$' \
 	&& php -m | grep -oiE '^mbstring$' \
 	&& php-fpm -m | grep -oiE '^mbstring$' \
-	&& php -m | grep -oiE '^memcached$' \
-	&& php-fpm -m | grep -oiE '^memcached$' \
 	&& php -m | grep -oiE '^mongodb$' \
 	&& php-fpm -m | grep -oiE '^mongodb$' \
 	&& php -m | grep -oiE '^mysqli$' \
 	&& php-fpm -m | grep -oiE '^mysqli$' \
 	&& php -m | grep -oiE '^mysqlnd$' \
 	&& php-fpm -m | grep -oiE '^mysqlnd$' \
-	&& php -m | grep -oiE '^oci8$' \
-	&& php-fpm -m | grep -oiE '^oci8$' \
 	&& php -m | grep -oiE '^Zend Opcache$' \
 	&& php-fpm -m | grep -oiE '^Zend Opcache$' \
 	&& php -m | grep -oiE '^openssl$' \
@@ -659,20 +408,10 @@ RUN set -eux \
 	&& php-fpm -m | grep -oiE '^pcre$' \
 	&& php -m | grep -oiE '^pdo$' \
 	&& php-fpm -m | grep -oiE '^pdo$' \
-	&& php -m | grep -oiE '^pdo_dblib$' \
-	&& php-fpm -m | grep -oiE '^pdo_dblib$' \
-	&& php -m | grep -oiE '^pdo_firebird$' \
-	&& php-fpm -m | grep -oiE '^pdo_firebird$' \
 	&& php -m | grep -oiE '^pdo_mysql$' \
 	&& php-fpm -m | grep -oiE '^pdo_mysql$' \
-	&& php -m | grep -oiE '^pdo_oci$' \
-	&& php-fpm -m | grep -oiE '^pdo_oci$' \
-	&& php -m | grep -oiE '^pdo_pgsql$' \
-	&& php-fpm -m | grep -oiE '^pdo_pgsql$' \
 	&& php -m | grep -oiE '^pdo_sqlite$' \
 	&& php-fpm -m | grep -oiE '^pdo_sqlite$' \
-	&& php -m | grep -oiE '^pgsql$' \
-	&& php-fpm -m | grep -oiE '^pgsql$' \
 	&& php -m | grep -oiE '^phar$' \
 	&& php-fpm -m | grep -oiE '^phar$' \
 	&& php -m | grep -oiE '^posix$' \
@@ -686,14 +425,8 @@ RUN set -eux \
 	&& php-fpm -m | grep -oiE '^reflection$' \
 	&& php -m | grep -oiE '^session$' \
 	&& php-fpm -m | grep -oiE '^session$' \
-	&& php -m | grep -oiE '^shmop$' \
-	&& php-fpm -m | grep -oiE '^shmop$' \
 	&& php -m | grep -oiE '^simplexml$' \
 	&& php-fpm -m | grep -oiE '^simplexml$' \
-	&& php -m | grep -oiE '^snmp$' \
-	&& php-fpm -m | grep -oiE '^snmp$' \
-	&& php -m | grep -oiE '^soap$' \
-	&& php-fpm -m | grep -oiE '^soap$' \
 	&& php -m | grep -oiE '^sockets$' \
 	&& php-fpm -m | grep -oiE '^sockets$' \
 	&& php -m | grep -oiE '^sodium$' \
@@ -704,8 +437,6 @@ RUN set -eux \
 	&& php-fpm -m | grep -oiE '^sysvmsg$' \
 	&& php -m | grep -oiE '^sysvsem$' \
 	&& php-fpm -m | grep -oiE '^sysvsem$' \
-	&& php -m | grep -oiE '^sysvshm$' \
-	&& php-fpm -m | grep -oiE '^sysvshm$' \
 	&& php -m | grep -oiE '^tidy$' \
 	&& php-fpm -m | grep -oiE '^tidy$' \
 	&& php -m | grep -oiE '^tokenizer$' \
@@ -714,12 +445,8 @@ RUN set -eux \
 	&& php-fpm -m | grep -oiE '^xml$' \
 	&& php -m | grep -oiE '^xmlreader$' \
 	&& php-fpm -m | grep -oiE '^xmlreader$' \
-	&& php -m | grep -oiE '^xmlrpc$' \
-	&& php-fpm -m | grep -oiE '^xmlrpc$' \
 	&& php -m | grep -oiE '^xmlwriter$' \
 	&& php-fpm -m | grep -oiE '^xmlwriter$' \
-	&& php -m | grep -oiE '^xsl$' \
-	&& php-fpm -m | grep -oiE '^xsl$' \
 	&& php -m | grep -oiE '^zip$' \
 	&& php-fpm -m | grep -oiE '^zip$' \
 	&& true

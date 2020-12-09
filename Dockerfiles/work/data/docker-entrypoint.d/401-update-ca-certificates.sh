@@ -19,7 +19,7 @@ update_ca_certificates() {
 	if [ -d "${dir}" ]; then
 		for cert in $( find "${dir}" -name \*.crt ); do
 			name="$( basename "${cert}" )"
-			run "cp ${cert} /usr/local/share/ca-certificates/${MY_USER}-${name}" "${debug}"
+			run "cp ${cert} /usr/local/share/ca-certificates/devilbox-${name}" "${debug}"
 		done
 	fi
 	run "update-ca-certificates" "${debug}"

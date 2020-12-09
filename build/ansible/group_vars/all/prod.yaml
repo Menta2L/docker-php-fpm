@@ -1,0 +1,24 @@
+# -------------------------------------------------------------------------------------------------
+# Extensions to enable (in defined order)
+# -------------------------------------------------------------------------------------------------
+prod_extensions_enabled:
+    - enchant
+    - libxml
+    - mongodb
+    - memcache
+    # requires igbinary and msgpack to be installed
+    - memcached
+    - oauth
+    - psr
+    - readline
+    - redis
+    - simplexml
+    - xml
+    - xmlreader
+    - xmlrpc
+    - xmlwriter
+     
+prod_software_enabled:
+    - composer
+    # Cleanup needs to be last
+    - cleanup

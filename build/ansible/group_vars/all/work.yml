@@ -31,20 +31,18 @@ apt_repositories_enabled:
 # PHP Composer packages to install
 # -------------------------------------------------------------------------------------------------
 composer_enabled:
-  - asgardcms
   - codeception
-  - lumen
-  - photon
   - prestissimo
 
 
 # -------------------------------------------------------------------------------------------------
 # Ruby gem packages to install
 # -------------------------------------------------------------------------------------------------
-gem_enabled:
-  - mixlib_config
-  - rb_inotify
-  - mdl
+gem_enabled: []
+#  - mixlib_config
+#  - ffi
+#  - rb_inotify
+#  - mdl
 
 
 # -------------------------------------------------------------------------------------------------
@@ -88,25 +86,17 @@ software_enabled:
   # Normal packages start here
   - awesomeci
   - deployer
-  - drush7
-  - drush8
-  - drush9
-  - drupalconsole
   - gitflow
-  - laravel
   - linkcheck
   - linuxbrew
   - mhsendmail
   - mysqldumpsecure
-  - phalcon
   - phpcs
   - phpcbf
   - php-cs-fixer
   - phpmd
   - phpunit
   - symfony
-  - wkhtmltopdf
-  - wpcli
   # Cleanup needs to be last
   - cleanup
 
@@ -119,7 +109,7 @@ software_enabled:
 # 7.2: is specific version of defines
 # disabled: [optional] Array of PHP versions for which to disable this module
 #
-# all, 7.2 :
+# all, 7.2, 7.1, 7.0, 5.6, 5.5, 5.4:
 #   deb:       Deb line to add to sources list
 #   key:       [optional] Key id to add for repository
 #   pre:       [optional] Run custom command to add gpg key for repository
@@ -133,13 +123,13 @@ apt_repositories_available:
       deb: deb http://packages.blackfire.io/debian any main
       pre: curl -sS -L --fail "https://packages.blackfire.io/gpg.key" 2>/dev/null | APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1 apt-key add -
   git:
-    7.2:
-      deb: deb http://ppa.launchpad.net/git-core/ppa/ubuntu artful main
     7.3:
       deb: deb http://ppa.launchpad.net/git-core/ppa/ubuntu artful main
     7.4:
       deb: deb http://ppa.launchpad.net/git-core/ppa/ubuntu artful main
     8.0:
+      deb: deb http://ppa.launchpad.net/git-core/ppa/ubuntu artful main
+    8.1:
       deb: deb http://ppa.launchpad.net/git-core/ppa/ubuntu artful main
     all:
       deb: deb http://ppa.launchpad.net/git-core/ppa/ubuntu wily main
@@ -168,34 +158,22 @@ apt_repositories_available:
 # 7.2:      is specific version of defines
 # disabled: [optional] Array of PHP versions for which to disable this module
 # check:    [optional] Include a check command to test if it was installed successfully
+# version:  Composer version: Either '1' or '2' for composer version
 #
-# all, 7.2:
+# all, 7.2, 7.1, 7.0, 5.6, 5.5, 5.4:
 # version:  [optional] Specific version of Ruby gem
 #
 composer_available:
-  asgardcms:
-    disabled: [8.0]
-    check: asgardcms --version 2>/dev/null | grep -Ei 'AsgardCMS\sInstaller\s[.0-9]+'
-    name: asgardcms/asgardcms-installer
-    link: asgardcms
   codeception:
-    disabled: [8.0]
-    check: codecept --version 2>/dev/null | grep -E '^Codeception(\sversion)?\s[.0-9]+$'
+    disabled: [8.0, 8.1]
+    check: codecept --version 2>/dev/null | grep -E '^Codeception(\sversion)?\s[0-9][.0-9]+$'
     name: codeception/codeception
     link: codecept
-  lumen:
-    disabled: [8.0]
-    check: lumen --version 2>/dev/null | grep -E '^Lumen Installer\s[.0-9]+$'
-    name: laravel/lumen-installer
-    link: lumen
-  photon:
-    disabled: [8.0]
-    check: photon --version | grep -E 'Installer [.0-9]+'
-    name: photoncms/installer
-    link: photon
+    version: 2
   prestissimo:
-    disabled: [8.0]
+    disabled: [8.0, 8.1]
     name: hirak/prestissimo
+    version: 1
 
 
 # -------------------------------------------------------------------------------------------------
@@ -208,25 +186,35 @@ composer_available:
 # disabled: [optional] Array of PHP versions for which to disable this module
 # check:    [optional] Include a check command to test if it was installed successfully
 #
-# all, 7.2:
+# all, 7.2, 7.1, 7.0, 5.6, 5.5, 5.4:
 # version:  [optional] Specific version of Ruby gem
 #
-gem_available:
-  mixlib_config:
-    name: mixlib-config
-    all:
-      version: 2.2.4
-  rb_inotify:
-    name: rb-inotify
-    all:
-      version: 0.9.10
-  mdl:
-    name: mdl
-    check: mdl --version | grep -E '[.0-9]+'
-    8.0:
-      version: 0.5.0
-    7.4:
-      version: 0.5.0
+gem_available: []
+#  mixlib_config:
+#    name: mixlib-config
+#    all:
+#      version: 2.2.4
+  # Required by rb-inotify, as otherwise rb-inotify will pull ffi as a dependency in a
+  # version which is not supported by the ruby version (>= 2.3)
+#  ffi:
+#    name: ffi
+#    disabled: [7.3, 7.4, 8.0, 8.1]
+#    all:
+#      version: 1.12.2
+#  rb_inotify:
+#    name: rb-inotify
+#    all:
+#      version: 0.9.10
+#  mdl:
+#    name: mdl
+#    check: mdl --version | grep -E '[0-9][.0-9]+'
+#    8.1:
+#      version: 0.5.0
+#    8.0:
+#      version: 0.5.0
+#    7.4:
+#      version: 0.5.0
+
 # -------------------------------------------------------------------------------------------------
 # npm (Node) definition
 # -------------------------------------------------------------------------------------------------
@@ -237,49 +225,49 @@ gem_available:
 # disabled: [optional] Array of PHP versions for which to disable this module
 # check:    [optional] Include a check command to test if it was installed successfully
 #
-# all, 7.2:
+# all, 7.2, 7.1, 7.0, 5.6, 5.5, 5.4:
 # version:  [optional] Specific version of Node npm package
 #
 npm_available:
   angular_cli:
     name: "@angular/cli"
-    check: ng  version 2>&1 | grep -iE 'Angular CLI:\s*[.0-9]+'
+    check: ng  version 2>&1 | grep -iE 'Angular CLI:\s*[0-9][.0-9]+'
   eslint:
     name: eslint
-    check: eslint -v | grep -E '[.0-9]+'
+    check: eslint -v | grep -E '[0-9][.0-9]+'
   grunt:
     name: grunt
   grunt_cli:
     name: grunt-cli
-    check: grunt --version | grep -E '[.0-9]+'
+    check: grunt --version | grep -E '[0-9][.0-9]+'
   gulp:
     name: gulp
-    check: gulp --version | grep -E '[.0-9]+'
+    check: gulp --version | grep -E '[0-9][.0-9]+'
   jsonlint:
     name: jsonlint
-    check: jsonlint --version | grep -E '[.0-9]+'
+    check: jsonlint --version | grep -E '[0-9][.0-9]+'
   pm2:
     name: pm2
-    check: pm2 --no-daemon --version | grep -E '[.0-9]+'
+    check: pm2 --no-daemon --version | tail -1 | grep -E '[0-9][.0-9]+'
   mdlint:
     name: mdlint
-    check: mdlint --version | grep -E '[.0-9]+'
+    check: mdlint --version | grep -E '[0-9][.0-9]+'
   sass:
     name: sass
-    check: sass --version | grep -E '[.0-9]+'
+    check: sass --version | grep -E '[0-9][.0-9]+'
   stylelint:
     name: stylelint
-    check: stylelint --version | grep -E '[.0-9]+'
+    check: stylelint --version | grep -E '[0-9][.0-9]+'
   vue_cli:
     name: "@vue/cli"
-    check: vue --version | grep -E '[.0-9]+'
+    check: vue --version | grep -E '[0-9][.0-9]+'
   vue_cli_service_global:
     name: "@vue/cli-service-global"
   webpack:
     name: webpack
   webpack_cli:
     name: webpack-cli
-    check: webpack --version | grep -E '[.0-9]+'
+    check: webpack --version | grep -E '[0-9][.0-9]+'
 
 
 # -------------------------------------------------------------------------------------------------
@@ -292,19 +280,19 @@ npm_available:
 # disabled: [optional] Array of PHP versions for which to disable this module
 # check:    [optional] Include a check command to test if it was installed successfully
 #
-# all, 7.2:
+# all, 7.2, 7.1, 7.0, 5.6, 5.5, 5.4:
 # version:  [optional] Specific version of Python pip package
 #
 pip_available:
   ansible:
     name: ansible
-    check: ansible --version | grep -E '^ansible [.0-9]+$'
+    check: ansible --version | grep -E '^ansible [0-9][.0-9]+$'
   yamllint:
     name: yamllint
-    check: yamllint --version 2>&1 | grep -E '[.0-9]+'
+    check: yamllint --version 2>&1 | grep -E '[0-9][.0-9]+'
   yq:
     name: yq
-    check: yq --version 2>&1 | grep -E '^yq\s+[.0-9]+$'
+    check: yq --version 2>&1 | grep -E '^yq\s+[0-9][.0-9]+$'
 
 
 # -------------------------------------------------------------------------------------------------
@@ -316,7 +304,7 @@ pip_available:
 # disabled: [optional] Array of PHP versions for which to disable this module
 # check:    [optional] Include a check command to test if it was installed successfully
 #
-# all, 7.2:
+# all, 7.2, 7.1, 7.0, 5.6, 5.5, 5.4:
 #   pre:       [optional] Run command before 'command:' statement
 #   command:   Command to execute
 #   post:      [optional] Run command after 'command:' statement
@@ -324,9 +312,14 @@ pip_available:
 software_available:
   # Composer is a dependency for others
   composer:
-    check: composer --version 2>/dev/null | grep -E 'version\s*[.0-9]+'
+    check: composer --version 2>/dev/null | grep -E 'version\s*[0-9][.0-9]+'
     all:
-      command: curl -sS -L --fail https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      command: |
+        curl -sS -L --fail https://getcomposer.org/composer-1.phar > /usr/local/bin/composer-1 \
+        && curl -sS -L --fail https://getcomposer.org/composer-2.phar > /usr/local/bin/composer-2 \
+        && chmod +x /usr/local/bin/composer-1 \
+        && chmod +x /usr/local/bin/composer-2 \
+        && ln -sf /usr/local/bin/composer-2 /usr/local/bin/composer \
   # pip is a dependency for others
   pip:
     all:
@@ -340,7 +333,7 @@ software_available:
         && curl -sS -L --fail https://bootstrap.pypa.io/get-pip.py | python \
   # nvm is a dependency for others
   nvm:
-    check: su  -c '. /opt/nvm/nvm.sh; nvm --version' {{php_user}} | grep -E '^[.0-9]+'
+    check: su  -c '. /opt/nvm/nvm.sh; nvm --version' devilbox | grep -E '^[0-9][.0-9]+'
     all:
       pre: |
         git clone https://github.com/creationix/nvm /opt/nvm \
@@ -351,16 +344,16 @@ software_available:
           echo 'export NVM_DIR="/opt/nvm"'; \
           echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm'; \
           echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion'; \
-        } >> /home/{{php_user}}/.bashrc \
+        } >> /home/devilbox/.bashrc \
         \
-        && chown -R {{php_user}}:{{php_group}} /opt/nvm \
+        && chown -R devilbox:devilbox /opt/nvm \
       # Install latest and LTS version
       command: |
-        su  -c '. /opt/nvm/nvm.sh; nvm install node' {{php_user}} \
-        && su  -c '. /opt/nvm/nvm.sh; nvm install --lts' {{php_user}} \
-        && su  -c '. /opt/nvm/nvm.sh; nvm use node' {{php_user}} \
+        su  -c '. /opt/nvm/nvm.sh; nvm install node' devilbox \
+        && su  -c '. /opt/nvm/nvm.sh; nvm install --lts' devilbox \
+        && su  -c '. /opt/nvm/nvm.sh; nvm use node' devilbox \
   awesomeci:
-    check: regex-grep --version | grep -E '[.0-9]+'
+    check: regex-grep --version | grep -E '[0-9][.0-9]+'
     all:
       command: |
         git clone https://github.com/cytopia/awesome-ci.git /usr/local/src/awesome-ci \
@@ -371,104 +364,36 @@ software_available:
         && cd / \
         && rm -rf /usr/local/src/awesome-ci \
   deployer:
-    check: dep --version 2>/dev/null | grep -Ei 'deployer\s*(version\s*)?[.0-9]+'
+    check: dep --version 2>/dev/null | grep -Ei 'deployer\s*(version\s*)?[0-9][.0-9]+'
     all:
       command: curl -sS -L --fail https://deployer.org/deployer.phar -L -o /usr/local/bin/dep
       post: chmod +x /usr/local/bin/dep
-  drush7:
-    disabled: [8.0]
-    check: drush7 --version | grep -E '7[.0-9]+\s*$'
-    all:
-      pre: |
-        git clone https://github.com/drush-ops/drush.git /usr/local/src/drush7 \
-        && cd /usr/local/src/drush7 \
-        && git checkout 7.4.0 \
-      command: |
-        chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/drush7 \
-        && su - ${MY_USER} -c 'PATH=/usr/local/bin:$PATH; cd /usr/local/src/drush7 && COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install --no-interaction --no-progress --no-dev' \
-        && ln -s /usr/local/src/drush7/drush /usr/local/bin/drush7 \
-        && rm -rf /usr/local/src/drush7/.git \
-        && rm -rf /usr/local/src/drush7/docs \
-        && rm -rf /usr/local/src/drush7/examples \
-        && rm -rf /usr/local/src/drush7/misc \
-  drush8:
-    disabled: [8.0]
-    check: drush8 --version | grep -E '8[.0-9]+\s*$'
-    all:
-      pre: |
-        git clone https://github.com/drush-ops/drush.git /usr/local/src/drush8 \
-        && cd /usr/local/src/drush8 \
-        && git checkout $( git for-each-ref --format='%(*creatordate:raw)%(creatordate:raw) %(refname)' refs/tags | sort -n | grep -E 'tags/8[.0-9]+$' | tail -1 | sed 's|.*/||g' ) \
-      command: |
-        chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/drush8 \
-        && su - ${MY_USER} -c 'PATH=/usr/local/bin:$PATH; cd /usr/local/src/drush8 && COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install --no-interaction --no-progress --no-dev' \
-        && ln -s /usr/local/src/drush8/drush /usr/local/bin/drush8 \
-        && rm -rf /usr/local/src/drush8/.git \
-        && rm -rf /usr/local/src/drush8/docs \
-        && rm -rf /usr/local/src/drush8/examples \
-        && rm -rf /usr/local/src/drush8/misc \
-  drush9:
-    disabled: [8.0]
-    check: drush9 --version | grep -E '9[.0-9]+\s*$'
-    all:
-      pre: |
-        git clone https://github.com/drush-ops/drush.git /usr/local/src/drush9 \
-        && cd /usr/local/src/drush9 \
-        && git checkout $( git for-each-ref --format='%(*creatordate:raw)%(creatordate:raw) %(refname)' refs/tags | sort -n | grep -E 'tags/9[.0-9]+$' | tail -1 | sed 's|.*/||g' ) \
-      command: |
-        chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/drush9 \
-        && su - ${MY_USER} -c 'PATH=/usr/local/bin:$PATH; cd /usr/local/src/drush9 && COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install --no-interaction --no-progress' \
-        && ln -s /usr/local/src/drush9/drush /usr/local/bin/drush9 \
-        && rm -rf /usr/local/src/drush9/.git \
-        && rm -rf /usr/local/src/drush9/docs \
-        && rm -rf /usr/local/src/drush9/examples \
-        && rm -rf /usr/local/src/drush9/misc \
-  drupalconsole:
-    disabled: [8.0] # TODO: re-enable for 8.0 (currently errors)
-    check: drupal --version | grep -E 'Drupal Console Launcher\s*[.0-9]'
-    all:
-      command: curl -sS -L --fail https://drupalconsole.com/installer -L -o /usr/local/bin/drupal
-      post: chmod +x /usr/local/bin/drupal
   gitflow:
-    check: git-flow version | grep -E '[.0-9]+'
+    check: git-flow version | grep -E '[0-9][.0-9]+'
     all:
       command: |
         git clone git://github.com/petervanderdoes/gitflow.git /tmp/gitflow \
         && cd /tmp/gitflow \
         && make install \
         && cd / && rm -rf /tmp/gitflow \
-  laravel:
-    check: laravel --version | grep -E '(Installer|version)\s*[.0-9]+'
-    disabled: [8.0]
-    all:
-      pre: |
-        git clone https://github.com/laravel/installer /usr/local/src/laravel-installer \
-        && cd /usr/local/src/laravel-installer \
-        && git checkout $(git describe --abbrev=0 --tags) \
-      command: |
-        chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/laravel-installer \
-        && su - ${MY_USER} -c 'PATH=/usr/local/bin:$PATH; cd /usr/local/src/laravel-installer && COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install --no-interaction --no-progress --no-dev' \
-        && rm -rf /usr/local/src/laravel-installer/laravel/.git \
-      post:
-        ln -s /usr/local/src/laravel-installer/bin/laravel /usr/local/bin/laravel
   linkcheck:
-    check: linkcheck --version | grep -E '^linkcheck\sv[.0-9]+'
+    check: linkcheck --version | grep -E '^linkcheck\sv[0-9][.0-9]+'
     all:
       command: |
         curl -sS -L --fail https://raw.githubusercontent.com/cytopia/linkcheck/master/linkcheck > /usr/local/bin/linkcheck \
         && chmod +x /usr/local/bin/linkcheck \
   linuxbrew:
-    check: su - ${MY_USER} -c '/usr/local/src/linuxbrew/bin/brew --version' | grep -E 'Homebrew\s*[.0-9]+'
+    check: su - ${MY_USER} -c '/usr/local/src/linuxbrew/bin/brew --version' | grep -E 'Homebrew\s*[0-9][.0-9]+'
     all:
       command: |
         git clone https://github.com/Linuxbrew/brew.git /usr/local/src/linuxbrew \
         && chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/linuxbrew \
         && v="${BASH_PROFILE}" su ${MY_USER} -c -p \
-            'echo "PATH=/usr/local/src/linuxbrew/bin:/usr/local/src/linuxbrew/sbin:/usr/bin:/usr/sbin:/bin:/sbin" >> /home/{{php_user}}/${v}' \
+            'echo "PATH=/usr/local/src/linuxbrew/bin:/usr/local/src/linuxbrew/sbin:/usr/bin:/usr/sbin:/bin:/sbin" >> /home/devilbox/${v}' \
         && v="${BASH_PROFILE}" su ${MY_USER} -c -p \
-            'echo "export MANPATH=/usr/local/src/linuxbrew/share/man:${MANPATH}"   >> /home/{{php_user}}/${v}' \
+            'echo "export MANPATH=/usr/local/src/linuxbrew/share/man:${MANPATH}"   >> /home/devilbox/${v}' \
         && v="${BASH_PROFILE}" su ${MY_USER} -c -p \
-            'echo "export INFOPATH=/usr/local/src/linuxbrew/share/man:${INFOPATH}" >> /home/{{php_user}}/${v}' \
+            'echo "export INFOPATH=/usr/local/src/linuxbrew/share/man:${INFOPATH}" >> /home/devilbox/${v}' \
         && su - ${MY_USER} -c '/usr/local/src/linuxbrew/bin/brew config' \
   mhsendmail:
     all:
@@ -477,7 +402,7 @@ software_available:
         && chmod +x mhsendmail_linux_amd64 \
         && mv mhsendmail_linux_amd64 /usr/local/bin/mhsendmail \
   mysqldumpsecure:
-    check: mysqldump-secure --version | grep -E 'Version:\s*[.0-9]+'
+    check: mysqldump-secure --version | grep -E 'Version:\s*[0-9][.0-9]+'
     all:
       command: |
         git clone https://github.com/cytopia/mysqldump-secure.git /usr/local/src/mysqldump-secure \
@@ -500,112 +425,45 @@ software_available:
         && sed -i'' 's/^NAGIOS_LOG=.*/NAGIOS_LOG=0/g' /etc/mysqldump-secure.conf \
         && cd / \
         && rm -rf /usr/local/src/mysqldump-secure \
-  phalcon:
-    disabled: [8.0]
-    check: phalcon commands | grep -E '[.0-9]+'
-    all:
-      pre: |
-        git clone https://github.com/phalcon/phalcon-devtools /usr/local/src/phalcon-devtools \
-        && cd /usr/local/src/phalcon-devtools \
-        && git checkout $(git describe --abbrev=0 --tags) \
-        && COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install \
-      command: |
-        chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/phalcon-devtools \
-        && su - ${MY_USER} -c 'cd /usr/local/src/phalcon-devtools && ./phalcon.sh' \
-        && ln -sf /usr/local/src/phalcon-devtools/phalcon /usr/local/bin/phalcon \
-        && chmod +x phalcon \
-        && cd / \
-        && rm -rf /usr/local/src/phalcon-devtools/.git \
   phpcs:
-    check: phpcs --version | grep -E 'version [.0-9]+'
+    check: phpcs --version | grep -E 'version [0-9][.0-9]+'
     all:
       command: |
         curl -sS -L --fail https://squizlabs.github.io/PHP_CodeSniffer/phpcs.phar > /usr/local/bin/phpcs 2>/dev/null \
         && chmod +x /usr/local/bin/phpcs \
   phpcbf:
-    check: phpcbf --version | grep -E 'version [.0-9]+'
+    check: phpcbf --version | grep -E 'version [0-9][.0-9]+'
     all:
       command: |
         curl -sS -L --fail https://squizlabs.github.io/PHP_CodeSniffer/phpcbf.phar > /usr/local/bin/phpcbf 2>/dev/null \
         && chmod +x /usr/local/bin/phpcbf \
   php-cs-fixer:
-    disabled: [7.4, 8.0]
+    disabled: [7.4, 8.0, 8.1]
     check: php-cs-fixer --version 2>&1 | grep -E 'Fixer\s+(version\s*)?[-_.0-9]+\s+'
     all:
       command: |
         curl -sS -L --fail https://cs.symfony.com/download/php-cs-fixer-v2.phar > /usr/local/bin/php-cs-fixer 2>/dev/null \
         && chmod +x /usr/local/bin/php-cs-fixer \
   phpmd:
-    check: phpmd --version | grep -E '^PHPMD [.0-9]+'
+    check: phpmd --version | grep -E '^PHPMD [0-9][.0-9]+'
     all:
       command: |
         curl -sS -L --fail https://phpmd.org/static/latest/phpmd.phar > phpmd.phar \
         && mv phpmd.phar /usr/local/bin/phpmd \
         && chmod +x /usr/local/bin/phpmd \
   phpunit:
-    disabled: [8.0]
-    check: phpunit --version | grep -iE '^PHPUnit\s[.0-9]+'
+    disabled: [8.0, 8.1]
+    check: phpunit --version | grep -iE '^PHPUnit\s[0-9][.0-9]+'
     all:
       command: |
         curl -sS -L --fail https://phar.phpunit.de/phpunit-7.phar > /usr/local/bin/phpunit 2>/dev/null \
         && chmod +x /usr/local/bin/phpunit \
   symfony:
-    check: symfony -V | grep -Ei 'version\s*.*v[.0-9]+'
+    check: symfony -V | grep -Ei 'version\s*.*v[0-9][.0-9]+'
     all:
       pre: SYMFONY_VERSION="$( curl -sS -L --fail https://get.symfony.com/cli/LATEST )"
       command: curl -sS -L --fail "https://github.com/symfony/cli/releases/download/v${SYMFONY_VERSION}/symfony_linux_amd64" > /usr/local/bin/symfony
       post: chmod +x /usr/local/bin/symfony
-  wkhtmltopdf:
-    check: wkhtmltopdf --version | grep -E "^wkhtmltopdf [.0-9]+\s+\(.+patched.+\)"
-    7.2:
-      command: |
-        DEBIAN_FRONTEND=noninteractive apt-get update -qq \
-        && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
-          libfontenc1 libxfont2 xfonts-75dpi xfonts-base xfonts-encodings xfonts-utils \
-        && curl -sS -L --fail -o /tmp/wkhtmltopdf.deb  https://github.com/${VERSION} \
-        && dpkg -i /tmp/wkhtmltopdf.deb \
-        && rm -f /tmp/wkhtmltopdf.deb \
-    7.3:
-      command: |
-        DEBIAN_FRONTEND=noninteractive apt-get update -qq \
-        && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
-          libfontenc1 libxfont2 xfonts-75dpi xfonts-base xfonts-encodings xfonts-utils \
-        && curl -sS -L --fail -o /tmp/wkhtmltopdf.deb  https://github.com/${VERSION} \
-        && dpkg -i /tmp/wkhtmltopdf.deb \
-        && rm -f /tmp/wkhtmltopdf.deb \
-    7.4:
-      command: |
-        DEBIAN_FRONTEND=noninteractive apt-get update -qq \
-        && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
-          libfontenc1 libxfont2 xfonts-75dpi xfonts-base xfonts-encodings xfonts-utils \
-        && curl -sS -L --fail -o /tmp/wkhtmltopdf.deb  https://github.com/${VERSION} \
-        && dpkg -i /tmp/wkhtmltopdf.deb \
-        && rm -f /tmp/wkhtmltopdf.deb \
-    8.0:
-      command: |
-        DEBIAN_FRONTEND=noninteractive apt-get update -qq \
-        && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
-          libfontenc1 libxfont2 xfonts-75dpi xfonts-base xfonts-encodings xfonts-utils \
-        && curl -sS -L --fail -o /tmp/wkhtmltopdf.deb  https://github.com/${VERSION} \
-        && dpkg -i /tmp/wkhtmltopdf.deb \
-        && rm -f /tmp/wkhtmltopdf.deb \
-    all:
-      pre: VERSION="$( curl -sSL -L --fail https://github.com/wkhtmltopdf/wkhtmltopdf/releases | grep -Eo '/wkhtmltopdf/.+stretch_amd64\.deb' | head -1 )"
-      command: |
-        DEBIAN_FRONTEND=noninteractive apt-get update -qq \
-        && DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
-          libfontenc1 libxfont1 xfonts-75dpi xfonts-base xfonts-encodings xfonts-utils \
-        && curl -sS -L --fail -o /tmp/wkhtmltopdf.deb  https://github.com/${VERSION} \
-        && dpkg -i /tmp/wkhtmltopdf.deb \
-        && rm -f /tmp/wkhtmltopdf.deb \
-      post: |
-        DEBIAN_FRONTEND=noninteractive apt-get purge -qq -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false apt-utils \
-        && rm -rf /var/lib/apt/lists/* \
-  wpcli:
-    check: wp --allow-root --version | grep -E '[.0-9]+'
-    all:
-      command: curl -sS -L --fail https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -L -o /usr/local/bin/wp
-      post: chmod +x /usr/local/bin/wp
   cleanup:
     all:
       command: |

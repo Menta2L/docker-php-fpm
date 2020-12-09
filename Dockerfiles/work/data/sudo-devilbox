@@ -2,6 +2,6 @@
 Defaults   env_keep += "PATH"
 Defaults   secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/usr/local/node/bin
 
-# Allow sandbox user to do anything without password
-%sandbox  ALL=(ALL)       NOPASSWD: ALL
+# Allow devilbox user to do anything without password
+%devilbox  ALL=(ALL)       NOPASSWD: ALL
 

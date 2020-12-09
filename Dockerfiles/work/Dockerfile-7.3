@@ -1,7 +1,7 @@
 # Auto-generated via Ansible: edit build/ansible/DOCKERFILES/Dockerfile-work.j2 instead.
-FROM docker.jobs.bg/veraxnet/php:7.3-prod
+FROM devilbox/php-fpm:7.3-prod
+MAINTAINER "cytopia" <cytopia@everythingcli.org>
 
-MAINTAINER vesco <vesco@jobs.bg>
 
 ###
 ### Labels
@@ -10,12 +10,12 @@ MAINTAINER vesco <vesco@jobs.bg>
 #LABEL "org.opencontainers.image.created"=""
 #LABEL "org.opencontainers.image.version"=""
 #LABEL "org.opencontainers.image.revision"=""
-LABEL "maintainer"="vesco <vesco@jobs.bg>"
-LABEL "org.opencontainers.image.authors"="vesco <vesco@jobs.bg>"
-LABEL "org.opencontainers.image.url"="https://git.infra.verax.net/veraxnet/docker-php-fpm"
-LABEL "org.opencontainers.image.documentation"="https://git.infra.verax.net/veraxnet/docker-php-fpm"
-LABEL "org.opencontainers.image.source"="https://git.infra.verax.net/veraxnet/docker-php-fpm"
-LABEL "org.opencontainers.image.vendor"="veraxnet"
+LABEL "maintainer"="cytopia <cytopia@everythingcli.org>"
+LABEL "org.opencontainers.image.authors"="cytopia <cytopia@everythingcli.org>"
+LABEL "org.opencontainers.image.url"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.documentation"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.source"="https://github.com/devilbox/docker-php-fpm"
+LABEL "org.opencontainers.image.vendor"="devilbox"
 LABEL "org.opencontainers.image.licenses"="MIT"
 LABEL "org.opencontainers.image.ref.name"="7.3-work"
 LABEL "org.opencontainers.image.title"="PHP-FPM 7.3-work"
@@ -62,6 +62,7 @@ RUN set -eux \
 		blackfire-agent \
 		build-essential \
 		bzip2 \
+		certbot \
 		coreutils \
 		dnsutils \
 		dos2unix \
@@ -73,6 +74,7 @@ RUN set -eux \
 		git-svn \
 		ghostscript \
 		graphviz \
+		gsfonts \
 		hostname \
 		htop \
 		imagemagick \
@@ -83,11 +85,14 @@ RUN set -eux \
 		libffi-dev \
 		libssl-dev \
 		libyaml-dev \
+		locales \
 		make \
 		mongodb-org-shell \
 		mongodb-org-tools \
 		moreutils \
 		mariadb-client \
+		mupdf \
+		mupdf-tools \
 		nano \
 		net-tools \
 		netcat \
@@ -128,7 +133,12 @@ RUN set -eux \
 ###
 RUN set -eux \
 # -------------------- composer --------------------
-	&& curl -sS -L --fail https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+	&& curl -sS -L --fail https://getcomposer.org/composer-1.phar > /usr/local/bin/composer-1 \
+&& curl -sS -L --fail https://getcomposer.org/composer-2.phar > /usr/local/bin/composer-2 \
+&& chmod +x /usr/local/bin/composer-1 \
+&& chmod +x /usr/local/bin/composer-2 \
+&& ln -sf /usr/local/bin/composer-2 /usr/local/bin/composer \
+ \
 	\
 # -------------------- pip --------------------
 	&& DEBIAN_FRONTEND=noninteractive apt-get update -qq \
@@ -149,13 +159,13 @@ RUN set -eux \
   echo 'export NVM_DIR="/opt/nvm"'; \
   echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm'; \
   echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion'; \
-} >> /home/sandbox/.bashrc \
+} >> /home/devilbox/.bashrc \
 \
-&& chown -R sandbox:sandbox /opt/nvm \
+&& chown -R devilbox:devilbox /opt/nvm \
  \
-	&& su  -c '. /opt/nvm/nvm.sh; nvm install node' sandbox \
-&& su  -c '. /opt/nvm/nvm.sh; nvm install --lts' sandbox \
-&& su  -c '. /opt/nvm/nvm.sh; nvm use node' sandbox \
+	&& su  -c '. /opt/nvm/nvm.sh; nvm install node' devilbox \
+&& su  -c '. /opt/nvm/nvm.sh; nvm install --lts' devilbox \
+&& su  -c '. /opt/nvm/nvm.sh; nvm use node' devilbox \
  \
 	\
 # -------------------- awesomeci --------------------
@@ -172,69 +182,12 @@ RUN set -eux \
 	&& curl -sS -L --fail https://deployer.org/deployer.phar -L -o /usr/local/bin/dep \
 	&& chmod +x /usr/local/bin/dep \
 	\
-# -------------------- drush7 --------------------
-	&& git clone https://github.com/drush-ops/drush.git /usr/local/src/drush7 \
-&& cd /usr/local/src/drush7 \
-&& git checkout 7.4.0 \
- \
-	&& chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/drush7 \
-&& su - ${MY_USER} -c 'PATH=/usr/local/bin:$PATH; cd /usr/local/src/drush7 && COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install --no-interaction --no-progress --no-dev' \
-&& ln -s /usr/local/src/drush7/drush /usr/local/bin/drush7 \
-&& rm -rf /usr/local/src/drush7/.git \
-&& rm -rf /usr/local/src/drush7/docs \
-&& rm -rf /usr/local/src/drush7/examples \
-&& rm -rf /usr/local/src/drush7/misc \
- \
-	\
-# -------------------- drush8 --------------------
-	&& git clone https://github.com/drush-ops/drush.git /usr/local/src/drush8 \
-&& cd /usr/local/src/drush8 \
-&& git checkout $( git for-each-ref --format='%(*creatordate:raw)%(creatordate:raw) %(refname)' refs/tags | sort -n | grep -E 'tags/8[.0-9]+$' | tail -1 | sed 's|.*/||g' ) \
- \
-	&& chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/drush8 \
-&& su - ${MY_USER} -c 'PATH=/usr/local/bin:$PATH; cd /usr/local/src/drush8 && COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install --no-interaction --no-progress --no-dev' \
-&& ln -s /usr/local/src/drush8/drush /usr/local/bin/drush8 \
-&& rm -rf /usr/local/src/drush8/.git \
-&& rm -rf /usr/local/src/drush8/docs \
-&& rm -rf /usr/local/src/drush8/examples \
-&& rm -rf /usr/local/src/drush8/misc \
- \
-	\
-# -------------------- drush9 --------------------
-	&& git clone https://github.com/drush-ops/drush.git /usr/local/src/drush9 \
-&& cd /usr/local/src/drush9 \
-&& git checkout $( git for-each-ref --format='%(*creatordate:raw)%(creatordate:raw) %(refname)' refs/tags | sort -n | grep -E 'tags/9[.0-9]+$' | tail -1 | sed 's|.*/||g' ) \
- \
-	&& chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/drush9 \
-&& su - ${MY_USER} -c 'PATH=/usr/local/bin:$PATH; cd /usr/local/src/drush9 && COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install --no-interaction --no-progress' \
-&& ln -s /usr/local/src/drush9/drush /usr/local/bin/drush9 \
-&& rm -rf /usr/local/src/drush9/.git \
-&& rm -rf /usr/local/src/drush9/docs \
-&& rm -rf /usr/local/src/drush9/examples \
-&& rm -rf /usr/local/src/drush9/misc \
- \
-	\
-# -------------------- drupalconsole --------------------
-	&& curl -sS -L --fail https://drupalconsole.com/installer -L -o /usr/local/bin/drupal \
-	&& chmod +x /usr/local/bin/drupal \
-	\
 # -------------------- gitflow --------------------
 	&& git clone git://github.com/petervanderdoes/gitflow.git /tmp/gitflow \
 && cd /tmp/gitflow \
 && make install \
 && cd / && rm -rf /tmp/gitflow \
  \
-	\
-# -------------------- laravel --------------------
-	&& git clone https://github.com/laravel/installer /usr/local/src/laravel-installer \
-&& cd /usr/local/src/laravel-installer \
-&& git checkout $(git describe --abbrev=0 --tags) \
- \
-	&& chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/laravel-installer \
-&& su - ${MY_USER} -c 'PATH=/usr/local/bin:$PATH; cd /usr/local/src/laravel-installer && COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install --no-interaction --no-progress --no-dev' \
-&& rm -rf /usr/local/src/laravel-installer/laravel/.git \
- \
-	&& ln -s /usr/local/src/laravel-installer/bin/laravel /usr/local/bin/laravel \
 	\
 # -------------------- linkcheck --------------------
 	&& curl -sS -L --fail https://raw.githubusercontent.com/cytopia/linkcheck/master/linkcheck > /usr/local/bin/linkcheck \
@@ -245,11 +198,11 @@ RUN set -eux \
 	&& git clone https://github.com/Linuxbrew/brew.git /usr/local/src/linuxbrew \
 && chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/linuxbrew \
 && v="${BASH_PROFILE}" su ${MY_USER} -c -p \
-    'echo "PATH=/usr/local/src/linuxbrew/bin:/usr/local/src/linuxbrew/sbin:/usr/bin:/usr/sbin:/bin:/sbin" >> /home/sandbox/${v}' \
+    'echo "PATH=/usr/local/src/linuxbrew/bin:/usr/local/src/linuxbrew/sbin:/usr/bin:/usr/sbin:/bin:/sbin" >> /home/devilbox/${v}' \
 && v="${BASH_PROFILE}" su ${MY_USER} -c -p \
-    'echo "export MANPATH=/usr/local/src/linuxbrew/share/man:${MANPATH}"   >> /home/sandbox/${v}' \
+    'echo "export MANPATH=/usr/local/src/linuxbrew/share/man:${MANPATH}"   >> /home/devilbox/${v}' \
 && v="${BASH_PROFILE}" su ${MY_USER} -c -p \
-    'echo "export INFOPATH=/usr/local/src/linuxbrew/share/man:${INFOPATH}" >> /home/sandbox/${v}' \
+    'echo "export INFOPATH=/usr/local/src/linuxbrew/share/man:${INFOPATH}" >> /home/devilbox/${v}' \
 && su - ${MY_USER} -c '/usr/local/src/linuxbrew/bin/brew config' \
  \
 	\
@@ -280,20 +233,6 @@ RUN set -eux \
 && sed -i'' 's/^NAGIOS_LOG=.*/NAGIOS_LOG=0/g' /etc/mysqldump-secure.conf \
 && cd / \
 && rm -rf /usr/local/src/mysqldump-secure \
- \
-	\
-# -------------------- phalcon --------------------
-	&& git clone https://github.com/phalcon/phalcon-devtools /usr/local/src/phalcon-devtools \
-&& cd /usr/local/src/phalcon-devtools \
-&& git checkout $(git describe --abbrev=0 --tags) \
-&& COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer install \
- \
-	&& chown -R ${MY_USER}:${MY_GROUP} /usr/local/src/phalcon-devtools \
-&& su - ${MY_USER} -c 'cd /usr/local/src/phalcon-devtools && ./phalcon.sh' \
-&& ln -sf /usr/local/src/phalcon-devtools/phalcon /usr/local/bin/phalcon \
-&& chmod +x phalcon \
-&& cd / \
-&& rm -rf /usr/local/src/phalcon-devtools/.git \
  \
 	\
 # -------------------- phpcs --------------------
@@ -327,23 +266,6 @@ RUN set -eux \
 	&& curl -sS -L --fail "https://github.com/symfony/cli/releases/download/v${SYMFONY_VERSION}/symfony_linux_amd64" > /usr/local/bin/symfony \
 	&& chmod +x /usr/local/bin/symfony \
 	\
-# -------------------- wkhtmltopdf --------------------
-	&& VERSION="$( curl -sSL -L --fail https://github.com/wkhtmltopdf/wkhtmltopdf/releases | grep -Eo '/wkhtmltopdf/.+stretch_amd64\.deb' | head -1 )" \
-	&& DEBIAN_FRONTEND=noninteractive apt-get update -qq \
-&& DEBIAN_FRONTEND=noninteractive apt-get install -qq -y --no-install-recommends --no-install-suggests \
-  libfontenc1 libxfont2 xfonts-75dpi xfonts-base xfonts-encodings xfonts-utils \
-&& curl -sS -L --fail -o /tmp/wkhtmltopdf.deb  https://github.com/${VERSION} \
-&& dpkg -i /tmp/wkhtmltopdf.deb \
-&& rm -f /tmp/wkhtmltopdf.deb \
- \
-	&& DEBIAN_FRONTEND=noninteractive apt-get purge -qq -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false apt-utils \
-&& rm -rf /var/lib/apt/lists/* \
- \
-	\
-# -------------------- wpcli --------------------
-	&& curl -sS -L --fail https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -L -o /usr/local/bin/wp \
-	&& chmod +x /usr/local/bin/wp \
-	\
 # -------------------- cleanup --------------------
 	&& rm -rf /home/${MY_USER}/.*json \
 && rm -rf /home/${MY_USER}/.cache \
@@ -372,10 +294,10 @@ RUN set -eux \
 	&& (rm -rf /root/.config || true) \
 	&& (rm -rf /root/.npm || true) \
 	\
-	&& (rm -rf /home/sandbox/.cache || true) \
-	&& (rm -rf /home/sandbox/.composer || true) \
-	&& (rm -rf /home/sandbox/.config || true) \
-	&& (rm -rf /home/sandbox/.npm || true) \
+	&& (rm -rf /home/devilbox/.cache || true) \
+	&& (rm -rf /home/devilbox/.composer || true) \
+	&& (rm -rf /home/devilbox/.config || true) \
+	&& (rm -rf /home/devilbox/.npm || true) \
 	\
 	&& (rm -rf /usr/local/src/composer/cache/* || true) \
 	&& rm -rf /tmp/* \
@@ -386,24 +308,12 @@ RUN set -eux \
 ### Install Composer (PHP)
 ###
 RUN set -eux \
-# -------------------- asgardcms --------------------
-	&& COMPOSER_HOME="/usr/local/src/composer" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer global require  asgardcms/asgardcms-installer \
-	&& ln -s /usr/local/src/composer/vendor/asgardcms/asgardcms-installer/asgardcms /usr/local/bin/ \
-	\
 # -------------------- codeception --------------------
-	&& COMPOSER_HOME="/usr/local/src/composer" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer global require  codeception/codeception \
+	&& COMPOSER_HOME="/usr/local/src/composer" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer-2 global require  codeception/codeception \
 	&& ln -s /usr/local/src/composer/vendor/codeception/codeception/codecept /usr/local/bin/ \
 	\
-# -------------------- lumen --------------------
-	&& COMPOSER_HOME="/usr/local/src/composer" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer global require  laravel/lumen-installer \
-	&& ln -s /usr/local/src/composer/vendor/laravel/lumen-installer/lumen /usr/local/bin/ \
-	\
-# -------------------- photon --------------------
-	&& COMPOSER_HOME="/usr/local/src/composer" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer global require  photoncms/installer \
-	&& ln -s /usr/local/src/composer/vendor/photoncms/installer/photon /usr/local/bin/ \
-	\
 # -------------------- prestissimo --------------------
-	&& COMPOSER_HOME="/usr/local/src/composer" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer global require  hirak/prestissimo \
+	&& COMPOSER_HOME="/usr/local/src/composer" COMPOSER_MEMORY_LIMIT=-1 /usr/local/bin/composer-1 global require  hirak/prestissimo \
 	\
 	\
 	&& rm -rf /tmp/* \
@@ -419,55 +329,55 @@ RUN set -eux \
 ###
 RUN set -eux \
 # -------------------- angular_cli --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force @angular/cli' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force @angular/cli' devilbox \
 	\
 # -------------------- eslint --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force eslint' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force eslint' devilbox \
 	\
 # -------------------- grunt --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force grunt' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force grunt' devilbox \
 	\
 # -------------------- grunt_cli --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force grunt-cli' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force grunt-cli' devilbox \
 	\
 # -------------------- gulp --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force gulp' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force gulp' devilbox \
 	\
 # -------------------- jsonlint --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force jsonlint' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force jsonlint' devilbox \
 	\
 # -------------------- pm2 --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force pm2' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force pm2' devilbox \
 	\
 # -------------------- mdlint --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force mdlint' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force mdlint' devilbox \
 	\
 # -------------------- sass --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force sass' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force sass' devilbox \
 	\
 # -------------------- stylelint --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force stylelint' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force stylelint' devilbox \
 	\
 # -------------------- vue_cli --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force @vue/cli' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force @vue/cli' devilbox \
 	\
 # -------------------- vue_cli_service_global --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force @vue/cli-service-global' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force @vue/cli-service-global' devilbox \
 	\
 # -------------------- webpack --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force webpack' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force webpack' devilbox \
 	\
 # -------------------- webpack_cli --------------------
-	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force webpack-cli' sandbox \
+	&& su -c '. /opt/nvm/nvm.sh; npm install -g --force webpack-cli' devilbox \
 	\
 	\
-	&& ln -sf $(dirname $(su -c '. /opt/nvm/nvm.sh; nvm which current' sandbox))/* /usr/local/bin/ \
+	&& ln -sf $(dirname $(su -c '. /opt/nvm/nvm.sh; nvm which current' devilbox))/* /usr/local/bin/ \
 	\
-	&& su -c '. /opt/nvm/nvm.sh; npm cache clear --force' sandbox \
-	&& su -c '. /opt/nvm/nvm.sh; nvm cache clear --force' sandbox \
-	&& rm -rf /home/sandbox/.npm \
-	&& rm -rf /home/sandbox/.cache \
-	&& rm -rf /home/sandbox/.config \
+	&& su -c '. /opt/nvm/nvm.sh; npm cache clear --force' devilbox \
+	&& su -c '. /opt/nvm/nvm.sh; nvm cache clear --force' devilbox \
+	&& rm -rf /home/devilbox/.npm \
+	&& rm -rf /home/devilbox/.cache \
+	&& rm -rf /home/devilbox/.config \
 	&& rm -rf /tmp/* \
 	&& (rm -rf /tmp/.* || true) \
 	\
@@ -478,15 +388,6 @@ RUN set -eux \
 ### Install gem (Ruby)
 ###
 RUN set -eux \
-# -------------------- mixlib_config --------------------
-	&& gem install mixlib-config -v 2.2.4 \
-	\
-# -------------------- rb_inotify --------------------
-	&& gem install rb-inotify -v 0.9.10 \
-	\
-# -------------------- mdl --------------------
-	&& gem install mdl \
-	\
 	\
 	&& rm -rf /root/.gem \
 	&& rm -rf /tmp/* \
@@ -502,13 +403,13 @@ RUN set -eux \
 ###
 RUN set -eux \
 # -------------------- ansible --------------------
-	&& pip install --no-cache-dir --force-reinstall ansible \
+	&& pip install --no-cache-dir --force-reinstall ansible || true \
 	\
 # -------------------- yamllint --------------------
-	&& pip install --no-cache-dir --force-reinstall yamllint \
+	&& pip install --no-cache-dir --force-reinstall yamllint || true \
 	\
 # -------------------- yq --------------------
-	&& pip install --no-cache-dir --force-reinstall yq \
+	&& pip install --no-cache-dir --force-reinstall yq || true \
 	\
 	\
 	&& rm -rf /root/.cache/pip \
@@ -525,11 +426,14 @@ RUN set -eux \
 ###
 RUN \
 	{ \
-		echo "PATH=\${PATH}:/usr/local/bin:/usr/local/sbin:\${HOME}/.yarn/bin:/opt/nvm/versions/node/\$(nvm version default)/bin"; \
+		echo 'PATH="${PATH}:${HOME}/.yarn/bin"'; \
+		echo 'PATH="${PATH}:${HOME}/.composer/vendor/bin"'; \
+		echo 'PATH="${PATH}:/usr/local/bin:/usr/local/sbin"'; \
+		echo 'PATH="${PATH}:/opt/nvm/versions/node/$(nvm version default)/bin"'; \
 		echo "export PATH"; \
-		echo ". /etc/bash-sandbox"; \
-		echo "if [ -d /etc/bashrc-sandbox.d/ ]; then"; \
-		echo "    for f in /etc/bashrc-sandbox.d/*.sh ; do"; \
+		echo ". /etc/bash-devilbox"; \
+		echo "if [ -d /etc/bashrc-devilbox.d/ ]; then"; \
+		echo "    for f in /etc/bashrc-devilbox.d/*.sh ; do"; \
 		echo "        if [ -r \"\${f}\" ]; then"; \
 		echo "            . \"\${f}\""; \
 		echo "        fi"; \
@@ -561,59 +465,47 @@ RUN set -eux \
 
 RUN set -eux \
 # -------------------- Software --------------------
-	&& composer --version 2>/dev/null | grep -E 'version\s*[.0-9]+' \
-	&& su  -c '. /opt/nvm/nvm.sh; nvm --version' sandbox | grep -E '^[.0-9]+' \
-	&& regex-grep --version | grep -E '[.0-9]+' \
-	&& dep --version 2>/dev/null | grep -Ei 'deployer\s*(version\s*)?[.0-9]+' \
-	&& drush7 --version | grep -E '7[.0-9]+\s*$' \
-	&& drush8 --version | grep -E '8[.0-9]+\s*$' \
-	&& drush9 --version | grep -E '9[.0-9]+\s*$' \
-	&& drupal --version | grep -E 'Drupal Console Launcher\s*[.0-9]' \
-	&& git-flow version | grep -E '[.0-9]+' \
-	&& laravel --version | grep -E '(Installer|version)\s*[.0-9]+' \
-	&& linkcheck --version | grep -E '^linkcheck\sv[.0-9]+' \
-	&& su - ${MY_USER} -c '/usr/local/src/linuxbrew/bin/brew --version' | grep -E 'Homebrew\s*[.0-9]+' \
-	&& mysqldump-secure --version | grep -E 'Version:\s*[.0-9]+' \
-	&& phalcon commands | grep -E '[.0-9]+' \
-	&& phpcs --version | grep -E 'version [.0-9]+' \
-	&& phpcbf --version | grep -E 'version [.0-9]+' \
+	&& composer --version 2>/dev/null | grep -E 'version\s*[0-9][.0-9]+' \
+	&& su  -c '. /opt/nvm/nvm.sh; nvm --version' devilbox | grep -E '^[0-9][.0-9]+' \
+	&& regex-grep --version | grep -E '[0-9][.0-9]+' \
+	&& dep --version 2>/dev/null | grep -Ei 'deployer\s*(version\s*)?[0-9][.0-9]+' \
+	&& git-flow version | grep -E '[0-9][.0-9]+' \
+	&& linkcheck --version | grep -E '^linkcheck\sv[0-9][.0-9]+' \
+	&& su - ${MY_USER} -c '/usr/local/src/linuxbrew/bin/brew --version' | grep -E 'Homebrew\s*[0-9][.0-9]+' \
+	&& mysqldump-secure --version | grep -E 'Version:\s*[0-9][.0-9]+' \
+	&& phpcs --version | grep -E 'version [0-9][.0-9]+' \
+	&& phpcbf --version | grep -E 'version [0-9][.0-9]+' \
 	&& php-cs-fixer --version 2>&1 | grep -E 'Fixer\s+(version\s*)?[-_.0-9]+\s+' \
-	&& phpmd --version | grep -E '^PHPMD [.0-9]+' \
-	&& phpunit --version | grep -iE '^PHPUnit\s[.0-9]+' \
-	&& symfony -V | grep -Ei 'version\s*.*v[.0-9]+' \
-	&& wkhtmltopdf --version | grep -E "^wkhtmltopdf [.0-9]+\s+\(.+patched.+\)" \
-	&& wp --allow-root --version | grep -E '[.0-9]+' \
+	&& phpmd --version | grep -E '^PHPMD [0-9][.0-9]+' \
+	&& phpunit --version | grep -iE '^PHPUnit\s[0-9][.0-9]+' \
+	&& symfony -V | grep -Ei 'version\s*.*v[0-9][.0-9]+' \
 	\
 # -------------------- Composer --------------------
-	&& asgardcms --version 2>/dev/null | grep -Ei 'AsgardCMS\sInstaller\s[.0-9]+' \
-	&& codecept --version 2>/dev/null | grep -E '^Codeception(\sversion)?\s[.0-9]+$' \
-	&& lumen --version 2>/dev/null | grep -E '^Lumen Installer\s[.0-9]+$' \
-	&& photon --version | grep -E 'Installer [.0-9]+' \
+	&& codecept --version 2>/dev/null | grep -E '^Codeception(\sversion)?\s[0-9][.0-9]+$' \
 	\
 # -------------------- PIP --------------------
-	&& ansible --version | grep -E '^ansible [.0-9]+$' \
-	&& yamllint --version 2>&1 | grep -E '[.0-9]+' \
-	&& yq --version 2>&1 | grep -E '^yq\s+[.0-9]+$' \
+	&& ansible --version | grep -E '^ansible [0-9][.0-9]+$' \
+	&& yamllint --version 2>&1 | grep -E '[0-9][.0-9]+' \
+	&& yq --version 2>&1 | grep -E '^yq\s+[0-9][.0-9]+$' \
 	\
 # -------------------- NPM --------------------
-	&& ng  version 2>&1 | grep -iE 'Angular CLI:\s*[.0-9]+' \
-	&& eslint -v | grep -E '[.0-9]+' \
-	&& grunt --version | grep -E '[.0-9]+' \
-	&& gulp --version | grep -E '[.0-9]+' \
-	&& jsonlint --version | grep -E '[.0-9]+' \
-	&& pm2 --no-daemon --version | grep -E '[.0-9]+' \
-	&& mdlint --version | grep -E '[.0-9]+' \
-	&& sass --version | grep -E '[.0-9]+' \
-	&& stylelint --version | grep -E '[.0-9]+' \
-	&& vue --version | grep -E '[.0-9]+' \
-	&& webpack --version | grep -E '[.0-9]+' \
+	&& ng  version 2>&1 | grep -iE 'Angular CLI:\s*[0-9][.0-9]+' \
+	&& eslint -v | grep -E '[0-9][.0-9]+' \
+	&& grunt --version | grep -E '[0-9][.0-9]+' \
+	&& gulp --version | grep -E '[0-9][.0-9]+' \
+	&& jsonlint --version | grep -E '[0-9][.0-9]+' \
+	&& pm2 --no-daemon --version | tail -1 | grep -E '[0-9][.0-9]+' \
+	&& mdlint --version | grep -E '[0-9][.0-9]+' \
+	&& sass --version | grep -E '[0-9][.0-9]+' \
+	&& stylelint --version | grep -E '[0-9][.0-9]+' \
+	&& vue --version | grep -E '[0-9][.0-9]+' \
+	&& webpack --version | grep -E '[0-9][.0-9]+' \
 	\
 # -------------------- GEM --------------------
-	&& mdl --version | grep -E '[.0-9]+' \
 	\
 # -------------------- Cleanup --------------------
-	&& rm -rf /home/sandbox/.cache/ \
-	&& rm -rf /home/sandbox/.config/ \
+	&& rm -rf /home/devilbox/.cache/ \
+	&& rm -rf /home/devilbox/.config/ \
 	&& rm -rf /root/.ansible \
 	&& rm -rf /root/.console \
 	&& rm -rf /root/.composer \
@@ -626,13 +518,13 @@ RUN set -eux \
 ###
 ### Copy files
 ###
-COPY ./data/php-ini.d/php-7.3.ini /usr/local/etc/php/conf.d/xxx-sandbox-default-php.ini
+COPY ./data/php-ini.d/php-7.3.ini /usr/local/etc/php/conf.d/xxx-devilbox-default-php.ini
 COPY ./data/php-fpm.conf/php-fpm-7.3.conf /usr/local/etc/php-fpm.conf
 
 COPY ./data/docker-entrypoint.sh /docker-entrypoint.sh
 COPY ./data/docker-entrypoint.d/*.sh /docker-entrypoint.d/
-COPY ./data/bash-sandbox /etc/bash-sandbox
-COPY ./data/sudo-sandbox /etc/sudoers.d/sandbox
+COPY ./data/bash-devilbox /etc/bash-devilbox
+COPY ./data/sudo-devilbox /etc/sudoers.d/devilbox
 
 
 ###

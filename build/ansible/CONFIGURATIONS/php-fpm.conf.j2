@@ -105,6 +105,7 @@ include   = /usr/local/etc/php-fpm.d/*.conf
 daemonize = no
 
 [www]
+{# This value is available since PHP >=5.4 #}
 ; Keep env variables set by docker
 clear_env = {{ item.cfg[item.key].clear_env | default(item.cfg[item.alt].clear_env) }}
 

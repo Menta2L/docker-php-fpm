@@ -1,0 +1,15 @@
+dev_extensions_enabled:
+    - xdebug
+dev_software_enabled:
+  - awesomeci
+  - deployer
+  - gitflow
+  - linkcheck
+  - mhsendmail
+  - phpcs
+  - phpcbf
+  - php-cs-fixer
+  - phpmd
+  - phpunit
+  # Cleanup needs to be last
+  - cleanup
