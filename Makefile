@@ -151,7 +151,7 @@ else
 endif
 
 build-version: _check-version
-build-version: 
+build-version:
 ifeq ($(VERSION),8.0)
 	@$(info make build 8.0)
 	$(MAKE) build-vendor VERSION=$(VERSION)
@@ -169,7 +169,7 @@ endif
 	$(MAKE) rebuild-dev VERSION=$(VERSION)
 
 build-prod: _check-version
-build-prod: _EXIST_IMAGE=mods
+build-prod: _EXIST_IMAGE=base
 build-prod: _check-image-exists
 build-prod:
 	docker build $(NO_CACHE) \
